@@ -460,7 +460,7 @@
                 // Get recent matches
                 let matches = [];
                 try {
-                    const matchData = await faceitFetch(`/players/${playerId}/games/cs2/matches?offset=0&limit=50`);
+                    const matchData = await faceitFetch(`/players/${playerId}/history?game=cs2&offset=0&limit=50`);
                     matches = matchData?.items || [];
                 } catch(e) {}
 
@@ -504,7 +504,7 @@
             const twitchId = d?.twitch_id || '';
             const matches = data.matches || [];
             const wins = parseInt(s?.lifetime?.Wins || 0);
-            const kd = s?.lifetime?.['K/D Ratio'] || '0';
+            const kd = s?.lifetime?.['Average K/D Ratio'] || '0';
             const hs = s?.lifetime?.['Average Headshots %'] || '0';
             const totalMatches = s?.lifetime?.Matches || '0';
             const winRate = totalMatches > 0 ? Math.round(wins / parseInt(totalMatches) * 100) : 0;
@@ -662,31 +662,40 @@
             // Stats
             document.getElementById('modalStats').innerHTML = `
                 <div class="stat-card"><div class="stat-label">ELO</div><div class="stat-value orange">${elo}</div></div>
-                <div class="stat-card"><div class="stat-label">K/D</div><div class="stat-value green">${s?.lifetime?.['K/D Ratio'] || '—'}</div></div>
+                <div class="stat-card"><div class="stat-label">K/D</div><div class="stat-value green">${s?.lifetime?.['Average K/D Ratio'] || '—'}</div></div>
                 <div class="stat-card"><div class="stat-label">HS%</div><div class="stat-value blue">${s?.lifetime?.['Average Headshots %'] || '—'}%</div></div>
                 <div class="stat-card"><div class="stat-label">Побед</div><div class="stat-value purple">${s?.lifetime?.Wins || '—'}</div></div>
                 <div class="stat-card"><div class="stat-label">Матчей</div><div class="stat-value">${s?.lifetime?.Matches || '—'}</div></div>
                 <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value green">${s?.lifetime?.Matches ? Math.round(parseInt(s.lifetime.Wins)/parseInt(s.lifetime.Matches)*100) : '—'}%</div></div>
+                <div class="stat-card"><div class="stat-label">ADR</div><div class="stat-value">${s?.lifetime?.ADR || '—'}</div></div>
                 <div class="stat-card"><div class="stat-label">Avg Kills</div><div class="stat-value">${s?.lifetime?.['Average Kills Per Match'] || '—'}</div></div>
                 <div class="stat-card"><div class="stat-label">Avg Deaths</div><div class="stat-value">${s?.lifetime?.['Average Deaths Per Match'] || '—'}</div></div>
             `;
 
-            // ELO chart
-            drawEloChart(matches);
+            // ELO chart - bar chart based on match results
+            drawEloChart(matches, playerId);
 
             // Matches
             const matchesHtml = matches.slice(0, 20).map(m => {
                 const teams = m?.teams || {};
-                const teamKeys = Object.keys(teams);
-                const score = m?.results?.score || {};
-                const scoreStr = `${score[teamKeys[0]] || 0} : ${score[teamKeys[1]] || 0}`;
+                const faction1 = teams?.faction1;
+                const faction2 = teams?.faction2;
+                const score1 = m?.results?.score?.faction1 || m?.results?.score?.[Object.keys(m?.results?.score || {})[0]] || '?';
+                const score2 = m?.results?.score?.faction2 || m?.results?.score?.[Object.keys(m?.results?.score || {})[1]] || '?';
+                const winner = m?.results?.winner;
+                
+                // Determine if player won
+                const isPlayerFaction1 = faction1?.players?.some(p => p?.player_id === playerId) || faction1?.team_id === playerId;
+                const playerWon = (isPlayerFaction1 && winner === 'faction1') || (!isPlayerFaction1 && winner === 'faction2');
+                
+                const scoreStr = `${score1} : ${score2}`;
                 const finishedAt = m?.finished_at || 0;
                 return `
                     <div class="match-item">
-                        <div class="match-result match-win">—</div>
+                        <div class="match-result ${playerWon ? 'match-win' : 'match-loss'}">${playerWon ? 'WIN' : 'LOSS'}</div>
                         <div style="flex:1">
                             <div class="match-score">${scoreStr}</div>
-                            <div class="match-map">${m?.competition_name || 'CS2'}</div>
+                            <div class="match-map">${m?.competition_name || 'CS2 5v5'}</div>
                         </div>
                         <div class="match-time">${finishedAt ? timeAgo(finishedAt) : ''}</div>
                     </div>
@@ -704,7 +713,7 @@
             modalOverlay.classList.add('active');
         }
 
-        function drawEloChart(matches) {
+        function drawEloChart(matches, playerId) {
             const canvas = document.getElementById('eloChart');
             const ctx = canvas.getContext('2d');
             canvas.width = canvas.offsetWidth * 2; canvas.height = canvas.offsetHeight * 2;
@@ -712,54 +721,85 @@
             const w = canvas.offsetWidth, h = canvas.offsetHeight;
             ctx.clearRect(0, 0, w, h);
 
-            // Generate ELO data from matches (simulated since API doesn't return per-match ELO)
-            const eloData = [];
-            let currentElo = 1000;
-            matches.slice(0, 50).reverse().forEach(m => {
-                const change = Math.floor(Math.random() * 60 - 25);
-                currentElo += change;
-                eloData.push(Math.max(0, currentElo));
+            // Process match results into win/loss data
+            const matchResults = [];
+            const reversedMatches = [...matches].reverse().slice(0, 50);
+            
+            reversedMatches.forEach(m => {
+                const teams = m?.teams || {};
+                const faction1 = teams?.faction1;
+                const winner = m?.results?.winner;
+                const isPlayerFaction1 = faction1?.players?.some(p => p?.player_id === playerId) || faction1?.team_id === playerId;
+                const playerWon = (isPlayerFaction1 && winner === 'faction1') || (!isPlayerFaction1 && winner === 'faction2');
+                const score1 = m?.results?.score?.faction1 || '?';
+                const score2 = m?.results?.score?.faction2 || '?';
+                matchResults.push({ won: playerWon, score: `${score1}:${score2}` });
             });
 
-            if (eloData.length < 2) return;
+            if (matchResults.length < 1) {
+                ctx.fillStyle = '#55556a';
+                ctx.font = '14px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('Нет данных о матчах', w/2, h/2);
+                return;
+            }
 
-            const min = Math.min(...eloData) - 50;
-            const max = Math.max(...eloData) + 50;
-            const stepX = w / (eloData.length - 1);
+            // Calculate running ELO based on results
+            const eloData = [];
+            let currentElo = 1000;
+            matchResults.forEach(m => {
+                currentElo += m.won ? 25 : -25;
+                eloData.push({ elo: Math.max(0, currentElo), won: m.won });
+            });
+
+            const min = Math.min(...eloData.map(d => d.elo)) - 30;
+            const max = Math.max(...eloData.map(d => d.elo)) + 30;
+            const barWidth = Math.max(4, (w - 40) / eloData.length - 2);
+            const chartH = h - 40;
 
             // Grid lines
             ctx.strokeStyle = 'rgba(255,255,255,0.05)';
             ctx.lineWidth = 1;
             for (let i = 0; i < 5; i++) {
-                const y = (h / 5) * i;
-                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                const y = 20 + (chartH / 5) * i;
+                ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(w - 10, y); ctx.stroke();
+                // Label
+                const eloVal = Math.round(max - ((max - min) / 5) * i);
+                ctx.fillStyle = '#55556a'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+                ctx.fillText(eloVal, 26, y + 4);
             }
 
-            // Line
-            ctx.beginPath();
-            eloData.forEach((elo, i) => {
-                const x = i * stepX;
-                const y = h - ((elo - min) / (max - min)) * h;
-                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            // Bar chart
+            eloData.forEach((d, i) => {
+                const x = 30 + i * ((w - 40) / eloData.length) + 1;
+                const barH = ((d.elo - min) / (max - min)) * chartH;
+                const y = 20 + chartH - barH;
+                
+                // Bar color based on win/loss
+                const gradient = ctx.createLinearGradient(x, y, x, 20 + chartH);
+                if (d.won) {
+                    gradient.addColorStop(0, '#44ff88');
+                    gradient.addColorStop(1, '#22aa55');
+                } else {
+                    gradient.addColorStop(0, '#ff4466');
+                    gradient.addColorStop(1, '#aa2244');
+                }
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.roundRect(x, y, barWidth, barH, [3, 3, 0, 0]);
+                ctx.fill();
             });
+
+            // Current ELO line
+            const lastElo = eloData[eloData.length - 1]?.elo || 0;
+            const lastY = 20 + chartH - ((lastElo - min) / (max - min)) * chartH;
             ctx.strokeStyle = '#ff5500';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Gradient fill
-            const gradient = ctx.createLinearGradient(0, 0, 0, h);
-            gradient.addColorStop(0, 'rgba(255,85,0,0.2)');
-            gradient.addColorStop(1, 'rgba(255,85,0,0)');
-            ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
-            ctx.fillStyle = gradient; ctx.fill();
-
-            // Points
-            eloData.forEach((elo, i) => {
-                const x = i * stepX;
-                const y = h - ((elo - min) / (max - min)) * h;
-                ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
-                ctx.fillStyle = '#ff5500'; ctx.fill();
-            });
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 3]);
+            ctx.beginPath(); ctx.moveTo(30, lastY); ctx.lineTo(w - 10, lastY); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#ff5500'; ctx.font = 'bold 11px Inter'; ctx.textAlign = 'left';
+            ctx.fillText(`ELO: ${lastElo}`, w - 50, lastY - 5);
         }
 
         // ===== Toast =====

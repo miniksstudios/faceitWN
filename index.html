@@ -231,7 +231,40 @@
     <script>
         const FACEIT_API_KEY = '28aaff41-edb1-442a-8cd7-c84e5e16c73b';
         const FACEIT_BASE = 'https://open.faceit.com/data/v4';
-        const DEFAULT_PLAYERS = ['_kolzer_', 'minilstudio'];
+        const GIST_ID = '292cae607c26c0676b87ae80214d4920';
+        const GIST_URL = `https://gist.githubusercontent.com/miniksstudios/${GIST_ID}/raw/players.json`;
+
+        let sharedPlayers = ['_kolzer_', 'minilstudio'];
+        let trackedPlayers = [];
+        let playersData = {};
+        let searchTimeout = null;
+
+        // Load shared list from gist + personal additions from localStorage
+        async function initPlayerList() {
+            // Try to load shared list from gist
+            try {
+                const resp = await fetch(GIST_URL, { cache: 'no-store' });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (Array.isArray(data) && data.length > 0) sharedPlayers = data;
+                }
+            } catch(e) { console.log('Gist load failed, using defaults'); }
+
+            // Load personal additions from localStorage
+            const personal = JSON.parse(localStorage.getItem('fw_personal') || '[]');
+            
+            // Merge: shared + personal (no duplicates)
+            const all = [...new Set([...sharedPlayers, ...personal])];
+            trackedPlayers = all;
+            
+            // Load URL overrides if present
+            const urlPlayers = getPlayersFromURL();
+            if (urlPlayers && urlPlayers.length > 0) {
+                trackedPlayers = [...new Set([...urlPlayers])];
+            }
+            
+            loadAllPlayers();
+        }
 
         function getPlayersFromURL() {
             const hash = window.location.hash.slice(1);
@@ -240,15 +273,17 @@
             }
             return null;
         }
-        let trackedPlayers = getPlayersFromURL() || JSON.parse(localStorage.getItem('fw_players') || 'null') || [...DEFAULT_PLAYERS];
-        let playersData = {};
-        let searchTimeout = null;
 
-        function updateURL() {
+        function savePlayer(nick) {
+            // Save to personal localStorage
+            const personal = JSON.parse(localStorage.getItem('fw_personal') || '[]');
+            if (!personal.includes(nick)) {
+                personal.push(nick);
+                localStorage.setItem('fw_personal', JSON.stringify(personal));
+            }
+            // Update URL
             window.location.hash = 'players=' + encodeURIComponent(JSON.stringify(trackedPlayers));
-            localStorage.setItem('fw_players', JSON.stringify(trackedPlayers));
         }
-        if (!getPlayersFromURL()) updateURL();
 
         // Tabs
         function switchTab(name, el) {
@@ -700,23 +735,23 @@
             searchTimeout=setTimeout(async()=>{const results=await searchPlayers(q);if(results.length===0){searchResults.classList.remove('active');return}
                 searchResults.innerHTML=results.map(p=>`<div class="search-result-item" data-nick="${p.nickname||p.name}"><img src="${p.avatar||'https://via.placeholder.com/32'}" alt="" onerror="this.src='https://via.placeholder.com/32'"><div style="flex:1"><div class="search-result-name">${p.nickname||p.name}</div><div style="font-size:0.75rem;color:var(--text3)">${p.country||''} • ${p.games?.cs2?.skill_level||'?'} lvl</div></div><div class="search-result-elo">${p.games?.cs2?.faceit_elo||'—'} ELO</div></div>`).join('');
                 searchResults.classList.add('active');
-                searchResults.querySelectorAll('.search-result-item').forEach(el=>{el.addEventListener('click',()=>{const nick=el.dataset.nick;if(nick&&!trackedPlayers.includes(nick)){trackedPlayers.push(nick);updateURL();loadAllPlayers();showToast('✓',`${nick} добавлен`)}searchResults.classList.remove('active');searchInput.value=''})});
+                searchResults.querySelectorAll('.search-result-item').forEach(el=>{el.addEventListener('click',()=>{const nick=el.dataset.nick;if(nick&&!trackedPlayers.includes(nick)){trackedPlayers.push(nick);savePlayer(nick);loadAllPlayers();showToast('✓',`${nick} добавлен`)}searchResults.classList.remove('active');searchInput.value=''})});
             },400)});
         document.addEventListener('click',(e)=>{if(!e.target.closest('.search-wrap'))searchResults.classList.remove('active')});
 
         // Add player
         document.getElementById('btnAddPlayer').addEventListener('click',()=>{
             const nick=prompt('Введите никнейм, Steam ссылку или Steam ID:');
-            if(nick&&nick.trim()){const n=nick.trim();if(!trackedPlayers.includes(n)){trackedPlayers.push(n);updateURL();loadAllPlayers();showToast('✓',`${n} добавлен`)}else{showToast('ℹ',`${n} уже отслеживается}`)}}});
+            if(nick&&nick.trim()){const n=nick.trim();if(!trackedPlayers.includes(n)){trackedPlayers.push(n);savePlayer(n);loadAllPlayers();showToast('✓',`${n} добавлен`)}else{showToast('ℹ',`${n} уже отслеживается`)}}});
 
         // Share
-        document.getElementById('btnShare').addEventListener('click',()=>{updateURL();navigator.clipboard.writeText(window.location.href).then(()=>showToast('✓','Ссылка скопирована!')).catch(()=>prompt('Скопируйте:',window.location.href))});
+        document.getElementById('btnShare').addEventListener('click',()=>{window.location.hash='players='+encodeURIComponent(JSON.stringify(trackedPlayers));navigator.clipboard.writeText(window.location.href).then(()=>showToast('✓','Ссылка скопирована!')).catch(()=>prompt('Скопируйте:',window.location.href))});
 
         // Toast
         function showToast(icon,text){document.getElementById('toastIcon').textContent=icon;document.getElementById('toastText').textContent=text;const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
 
         // Init
-        loadAllPlayers();
+        initPlayerList();
         setInterval(loadAllPlayers,120000);
     </script>
 </body>

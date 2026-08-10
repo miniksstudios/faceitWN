@@ -508,9 +508,10 @@
             const hs = s?.lifetime?.['Average Headshots %'] || '0';
             const totalMatches = s?.lifetime?.Matches || '0';
             const winRate = totalMatches > 0 ? Math.round(wins / parseInt(totalMatches) * 100) : 0;
+            const cardId = `card_${nickname.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
             return `
-                <div class="player-card" onclick="openPlayerModal('${nickname}')">
+                <div class="player-card" id="${cardId}" data-nickname="${nickname}">
                     <div class="player-top">
                         <img class="player-avatar" src="${avatar}" alt="${nickname}" onerror="this.src='https://via.placeholder.com/48'">
                         <div class="player-info">
@@ -530,7 +531,7 @@
                         <div class="elo-track"><div class="elo-fill" style="width:${getEloWidth(elo)}%;background:${getEloColor(elo)}"></div></div>
                     </div>
                     <div class="player-links">
-                        <a href="https://www.faceit.com/en/players/${nickname}" target="_blank" class="player-link link-faceit" onclick="event.stopPropagation()">FACEIT</a>
+                        <a href="https://www.faceit.com/en/players/${encodeURIComponent(nickname)}" target="_blank" class="player-link link-faceit" onclick="event.stopPropagation()">FACEIT</a>
                         ${steamId ? `<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam" onclick="event.stopPropagation()">Steam</a>` : ''}
                         ${twitchId ? `<a href="https://twitch.tv/${twitchId}" target="_blank" class="player-link link-twitch" onclick="event.stopPropagation()">Twitch</a>` : ''}
                     </div>
@@ -552,7 +553,11 @@
             for (const nick of trackedPlayers) {
                 try {
                     const data = await getPlayerData(nick);
-                    if (data) { results.push(data); playersData[nick] = data; }
+                    if (data) {
+                        results.push(data);
+                        const actualNick = data.details?.nickname || nick;
+                        playersData[actualNick] = data;
+                    }
                 } catch(e) { console.error(e); }
             }
 
@@ -562,6 +567,15 @@
             }
 
             grid.innerHTML = results.map(r => renderPlayerCard(r)).join('');
+            
+            // Add click listeners
+            document.querySelectorAll('.player-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const nick = card.dataset.nickname;
+                    if (nick && playersData[nick]) openPlayerModal(nick);
+                });
+            });
+
             updateStats(results);
         }
 

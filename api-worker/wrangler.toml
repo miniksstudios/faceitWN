@@ -1,0 +1,7 @@
+name = "faceitwn-api"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "PLAYERS_KV"
+id = "6447296235cb4872a86a09d19efaa296"

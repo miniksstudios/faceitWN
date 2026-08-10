@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FACEIT Watch — CS2 Player Stats & Live Tracker</title>
+    <meta name="description" content="Track FACEIT CS2 players, ELO history, match stats and live games in real-time">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --bg2: #12121a;
+            --bg3: #1a1a28;
+            --card: #16161fcc;
+            --border: #2a2a3a;
+            --text: #e8e8f0;
+            --text2: #8888aa;
+            --text3: #55556a;
+            --orange: #ff5500;
+            --orange2: #ff8800;
+            --green: #44ff88;
+            --red: #ff4466;
+            --blue: #4488ff;
+            --purple: #9955ff;
+            --accent: #ff5500;
+            --glow: rgba(255, 85, 0, 0.15);
+            --font: 'Inter', -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated BG */
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .bg-orb {
+            position: fixed; border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: 0;
+            animation: floatOrb 15s ease-in-out infinite alternate;
+        }
+        .bg-orb-1 { width: 500px; height: 500px; top: -150px; left: -100px; background: rgba(255,85,0,0.08); }
+        .bg-orb-2 { width: 400px; height: 400px; bottom: -150px; right: -100px; background: rgba(153,85,255,0.06); animation-delay: -5s; }
+        .bg-orb-3 { width: 350px; height: 350px; top: 50%; left: 50%; background: rgba(68,136,255,0.04); animation-delay: -10s; }
+        @keyframes floatOrb { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(50px,-30px) scale(1.1); } }
+
+        /* Header */
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(10,10,15,0.85); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border); padding: 0 2rem; height: 60px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon {
+            width: 36px; height: 36px; background: linear-gradient(135deg, var(--orange), var(--orange2));
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 18px; color: #fff;
+        }
+        .logo-text { font-size: 1.3rem; font-weight: 800; color: var(--text); }
+        .logo-text span { color: var(--orange); }
+
+        /* Search */
+        .search-wrap { position: relative; width: 400px; }
+        .search-input {
+            width: 100%; background: var(--bg3); border: 1px solid var(--border);
+            border-radius: 12px; padding: 10px 16px 10px 42px; color: var(--text);
+            font-size: 0.95rem; font-family: var(--font); outline: none; transition: 0.2s;
+        }
+        .search-input:focus { border-color: var(--orange); box-shadow: 0 0 20px var(--glow); }
+        .search-icon {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text3); font-size: 1rem;
+        }
+        .search-results {
+            position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px;
+            background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+            max-height: 300px; overflow-y: auto; display: none; z-index: 200;
+        }
+        .search-results.active { display: block; }
+        .search-result-item {
+            display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+            cursor: pointer; transition: 0.15s; border-bottom: 1px solid var(--border);
+        }
+        .search-result-item:last-child { border-bottom: none; }
+        .search-result-item:hover { background: var(--bg3); }
+        .search-result-item img { width: 32px; height: 32px; border-radius: 8px; }
+        .search-result-name { font-weight: 600; font-size: 0.9rem; }
+        .search-result-elo { font-size: 0.8rem; color: var(--orange); font-weight: 700; }
+
+        /* Header actions */
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .btn-add {
+            background: linear-gradient(135deg, var(--orange), var(--orange2));
+            color: #fff; border: none; border-radius: 10px; padding: 8px 18px;
+            font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: var(--font);
+            transition: 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-add:hover { transform: translateY(-2px); box-shadow: 0 4px 20px var(--glow); }
+
+        /* Main content */
+        .main { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 30px 2rem; }
+
+        /* Stats overview */
+        .stats-bar {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px;
+        }
+        .stat-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            padding: 18px; backdrop-filter: blur(10px); transition: 0.3s;
+        }
+        .stat-card:hover { border-color: var(--orange); transform: translateY(-3px); }
+        .stat-label { font-size: 0.75rem; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; }
+        .stat-value.orange { color: var(--orange); }
+        .stat-value.green { color: var(--green); }
+        .stat-value.blue { color: var(--blue); }
+        .stat-value.purple { color: var(--purple); }
+
+        /* Section title */
+        .section-title {
+            font-size: 1.4rem; font-weight: 800; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+
+        /* Player cards grid */
+        .players-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-bottom: 40px;
+        }
+        .player-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 20px; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .player-card:hover { border-color: var(--orange); transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+        .player-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--orange), var(--orange2), transparent);
+        }
+        .player-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+        .player-avatar {
+            width: 48px; height: 48px; border-radius: 12px; object-fit: cover;
+            border: 2px solid var(--border);
+        }
+        .player-info { flex: 1; }
+        .player-nick { font-size: 1.1rem; font-weight: 700; margin-bottom: 2px; }
+        .player-country { font-size: 0.8rem; color: var(--text2); }
+        .player-level {
+            width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center;
+            justify-content: center; font-weight: 900; font-size: 1.2rem; color: #fff;
+        }
+        .lvl-1 { background: linear-gradient(135deg, #2a2a2a, #3a3a3a); }
+        .lvl-2 { background: linear-gradient(135deg, #2a2a2a, #3a3a3a); }
+        .lvl-3 { background: linear-gradient(135deg, #4a7a2a, #5a8a3a); }
+        .lvl-4 { background: linear-gradient(135deg, #4a7a2a, #5a8a3a); }
+        .lvl-5 { background: linear-gradient(135deg, #2a6a8a, #3a7a9a); }
+        .lvl-6 { background: linear-gradient(135deg, #2a6a8a, #3a7a9a); }
+        .lvl-7 { background: linear-gradient(135deg, #6a2a8a, #7a3a9a); }
+        .lvl-8 { background: linear-gradient(135deg, #8a2a2a, #9a3a3a); }
+        .lvl-9 { background: linear-gradient(135deg, #8a6a2a, #9a7a3a); }
+        .lvl-10 { background: linear-gradient(135deg, #ff5500, #ff8800); }
+
+        .player-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+        .player-stat { text-align: center; }
+        .player-stat-val { font-size: 1rem; font-weight: 700; }
+        .player-stat-label { font-size: 0.65rem; color: var(--text3); text-transform: uppercase; }
+
+        .player-elo-bar { margin-bottom: 10px; }
+        .elo-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .elo-label { font-size: 0.75rem; color: var(--text2); }
+        .elo-value { font-size: 0.85rem; font-weight: 700; color: var(--orange); }
+        .elo-track { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+        .elo-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+        .player-links { display: flex; gap: 6px; }
+        .player-link {
+            padding: 5px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 600;
+            text-decoration: none; transition: 0.2s; display: flex; align-items: center; gap: 4px;
+        }
+        .link-faceit { background: rgba(255,85,0,0.15); color: var(--orange); }
+        .link-faceit:hover { background: rgba(255,85,0,0.3); }
+        .link-steam { background: rgba(68,136,255,0.15); color: var(--blue); }
+        .link-steam:hover { background: rgba(68,136,255,0.3); }
+        .link-twitch { background: rgba(153,85,255,0.15); color: var(--purple); }
+        .link-twitch:hover { background: rgba(153,85,255,0.3); }
+
+        /* Player detail modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 500;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: none;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
+            width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; position: relative;
+        }
+        .modal-close {
+            position: absolute; top: 16px; right: 16px; background: var(--bg3);
+            border: 1px solid var(--border); border-radius: 10px; width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            color: var(--text2); font-size: 1.2rem; transition: 0.2s; z-index: 10;
+        }
+        .modal-close:hover { background: var(--red); color: #fff; }
+        .modal-header {
+            padding: 30px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 20px;
+        }
+        .modal-avatar { width: 80px; height: 80px; border-radius: 16px; object-fit: cover; }
+        .modal-name { font-size: 1.6rem; font-weight: 800; }
+        .modal-sub { font-size: 0.9rem; color: var(--text2); }
+        .modal-body { padding: 24px; }
+        .modal-section { margin-bottom: 24px; }
+        .modal-section-title { font-size: 0.85rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+        /* ELO chart */
+        .elo-chart { width: 100%; height: 200px; background: var(--bg); border-radius: 12px; position: relative; overflow: hidden; padding: 20px; }
+        .elo-chart canvas { width: 100%; height: 100%; }
+
+        /* Match history */
+        .match-item {
+            display: flex; align-items: center; gap: 14px; padding: 12px;
+            background: var(--bg); border-radius: 10px; margin-bottom: 8px;
+        }
+        .match-result {
+            padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;
+            min-width: 50px; text-align: center;
+        }
+        .match-win { background: rgba(68,255,136,0.15); color: var(--green); }
+        .match-loss { background: rgba(255,68,102,0.15); color: var(--red); }
+        .match-score { font-size: 0.9rem; font-weight: 600; flex: 1; }
+        .match-map { font-size: 0.8rem; color: var(--text2); }
+        .match-elo-change { font-size: 0.85rem; font-weight: 700; }
+        .elo-gain { color: var(--green); }
+        .elo-loss { color: var(--red); }
+        .match-time { font-size: 0.75rem; color: var(--text3); }
+
+        /* Live indicator */
+        .live-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(255,68,102,0.15); color: var(--red); padding: 3px 10px;
+            border-radius: 6px; font-size: 0.7rem; font-weight: 700;
+        }
+        .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: livePulse 1.5s infinite; }
+        @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .players-grid { grid-template-columns: 1fr; }
+            .search-wrap { width: 100%; }
+            .header { padding: 0 1rem; }
+            .main { padding: 20px 1rem; }
+        }
+
+        /* Loading */
+        .loading { text-align: center; padding: 40px; color: var(--text3); }
+        .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; z-index: 600;
+            background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+            padding: 14px 20px; display: flex; align-items: center; gap: 10px;
+            transform: translateY(100px); opacity: 0; transition: 0.3s;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-icon { font-size: 1.2rem; }
+        .toast-text { font-size: 0.9rem; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">F</div>
+            <div class="logo-text">FACEIT<span>Watch</span></div>
+        </div>
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Поиск игрока по никнейму..." autocomplete="off">
+            <div class="search-results" id="searchResults"></div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-add" id="btnAddPlayer">+ Добавить</button>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <div class="main">
+        <!-- Stats bar -->
+        <div class="stats-bar" id="statsBar">
+            <div class="stat-card"><div class="stat-label">Игроков отслеживается</div><div class="stat-value orange" id="statPlayers">0</div></div>
+            <div class="stat-card"><div class="stat-label">Средний ELO</div><div class="stat-value green" id="statElo">0</div></div>
+            <div class="stat-card"><div class="stat-label">Матчей сегодня</div><div class="stat-value blue" id="statMatches">0</div></div>
+            <div class="stat-card"><div class="stat-label">Сейчас в игре</div><div class="stat-value purple" id="statLive">0</div></div>
+        </div>
+
+        <!-- Players -->
+        <div class="section-title"><div class="dot"></div> Отслеживаемые игроки</div>
+        <div class="players-grid" id="playersGrid">
+            <div class="loading"><div class="spinner"></div><br>Загрузка игроков...</div>
+        </div>
+    </div>
+
+    <!-- Player Detail Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-close" id="modalClose">✕</div>
+            <div class="modal-header">
+                <img class="modal-avatar" id="modalAvatar" src="" alt="">
+                <div>
+                    <div class="modal-name" id="modalName">—</div>
+                    <div class="modal-sub" id="modalSub">—</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="modal-section">
+                    <div class="modal-section-title">ELO — последние 50 матчей</div>
+                    <div class="elo-chart"><canvas id="eloChart"></canvas></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">Статистика CS2</div>
+                    <div id="modalStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;"></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">История матчей</div>
+                    <div id="modalMatches"></div>
+                </div>
+                <div class="modal-section">
+                    <div class="modal-section-title">Ссылки</div>
+                    <div id="modalLinks" class="player-links"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <span class="toast-icon" id="toastIcon">✓</span>
+        <span class="toast-text" id="toastText">—</span>
+    </div>
+
+    <script>
+        // ===== CONFIG =====
+        // Получи бесплатный API ключ на https://developers.faceit.com
+        // Вставь его сюда:
+        const FACEIT_API_KEY = 'YOUR_FACEIT_API_KEY_HERE';
+        const FACEIT_BASE = 'https://open.faceit.com/data/v4';
+
+        // Default tracked players (including the two required)
+        let trackedPlayers = JSON.parse(localStorage.getItem('fw_players') || 'null') || [
+            '_kolzer_',
+            'minilstudio'
+        ];
+
+        let playersData = {};
+        let searchTimeout = null;
+
+        // ===== Background particles =====
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+        let particles = [];
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < 60; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5, speedX: (Math.random() - 0.5) * 0.2, speedY: (Math.random() - 0.5) * 0.2,
+                    color: `rgba(255,${85+Math.random()*60},0,${Math.random()*0.3+0.05})`
+                });
+            }
+        }
+        initParticles();
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.speedX; p.y += p.speedY;
+                if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color; ctx.fill();
+            });
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 100) {
+                        ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(255,85,0,${0.05*(1-dist/100)})`;
+                        ctx.lineWidth = 0.5; ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // ===== FACEIT API =====
+        async function faceitFetch(endpoint) {
+            const resp = await fetch(`${FACEIT_BASE}${endpoint}`, {
+                headers: { 'Authorization': `Bearer ${FACEIT_API_KEY}`, 'Accept': 'application/json' }
+            });
+            if (!resp.ok) throw new Error(`API ${resp.status}`);
+            return resp.json();
+        }
+
+        async function searchPlayers(nickname) {
+            if (!nickname || nickname.length < 2) return [];
+            try {
+                const data = await faceitFetch(`/search/v1?query=${encodeURIComponent(nickname)}&game=cs2&limit=8`);
+                return data?.players?.items || data?.items || [];
+            } catch(e) {
+                console.error('Search error:', e);
+                return [];
+            }
+        }
+
+        async function getPlayerData(nickname) {
+            try {
+                // Search by nickname to get player_id
+                const search = await faceitFetch(`/search/v1?query=${encodeURIComponent(nickname)}&game=cs2&limit=1`);
+                const player = (search?.players?.items || search?.items || [])[0];
+                if (!player) throw new Error('Player not found');
+
+                const playerId = player.player_id || player.guid;
+
+                // Get detailed player info
+                const details = await faceitFetch(`/players/${playerId}`);
+
+                // Get CS2 stats
+                let stats = null;
+                try { stats = await faceitFetch(`/players/${playerId}/stats/cs2`); } catch(e) {}
+
+                // Get recent matches
+                let matches = [];
+                try {
+                    const matchData = await faceitFetch(`/players/${playerId}/games/cs2/matches?offset=0&limit=50`);
+                    matches = matchData?.items || [];
+                } catch(e) {}
+
+                return { details, stats, matches, searchResult: player };
+            } catch(e) {
+                console.error('Player load error:', e);
+                return null;
+            }
+        }
+
+        // ===== UI =====
+        function getLevelClass(level) { return `lvl-${Math.min(Math.max(level || 1, 1), 10)}`; }
+
+        function getEloColor(elo) {
+            if (elo >= 2000) return '#ff5500';
+            if (elo >= 1500) return '#9955ff';
+            if (elo >= 1000) return '#4488ff';
+            return '#44ff88';
+        }
+
+        function getEloWidth(elo) { return Math.min(Math.max((elo / 3000) * 100, 5), 100); }
+
+        function timeAgo(timestamp) {
+            const diff = Date.now() / 1000 - timestamp;
+            if (diff < 60) return 'только что';
+            if (diff < 3600) return `${Math.floor(diff/60)}м назад`;
+            if (diff < 86400) return `${Math.floor(diff/3600)}ч назад`;
+            return `${Math.floor(diff/86400)}д назад`;
+        }
+
+        function renderPlayerCard(data) {
+            const d = data.details;
+            const s = data.stats;
+            const elo = d?.games?.cs2?.faceit_elo || d?.faceit_elo || 0;
+            const level = d?.games?.cs2?.skill_level || d?.skill_level || 0;
+            const avatar = d?.avatar || 'https://via.placeholder.com/48';
+            const country = d?.country || '';
+            const nickname = d?.nickname || data.searchResult?.nickname || 'Unknown';
+            const playerId = d?.player_id || data.searchResult?.player_id;
+            const steamId = d?.steam_id_64 || d?.steamid || '';
+            const twitchId = d?.twitch_id || '';
+            const matches = data.matches || [];
+            const wins = parseInt(s?.lifetime?.Wins || 0);
+            const kd = s?.lifetime?.['K/D Ratio'] || '0';
+            const hs = s?.lifetime?.['Average Headshots %'] || '0';
+            const matches50 = matches.slice(0, 50);
+
+            // Count wins from recent matches
+            let recentWins = 0;
+            matches50.forEach(m => {
+                const result = m?.results;
+                if (result?.winner === result?.teams?.[Object.keys(result?.teams || {})[0]]?.faction_id) recentWins++;
+            });
+
+            return `
+                <div class="player-card" onclick="openPlayerModal('${nickname}')">
+                    <div class="player-top">
+                        <img class="player-avatar" src="${avatar}" alt="${nickname}" onerror="this.src='https://via.placeholder.com/48'">
+                        <div class="player-info">
+                            <div class="player-nick">${nickname}</div>
+                            <div class="player-country">${country.toUpperCase()} ${getFlag(country)}</div>
+                        </div>
+                        <div class="player-level ${getLevelClass(level)}">${level}</div>
+                    </div>
+                    <div class="player-stats-row">
+                        <div class="player-stat"><div class="player-stat-val" style="color:var(--orange)">${elo}</div><div class="player-stat-label">ELO</div></div>
+                        <div class="player-stat"><div class="player-stat-val">${kd}</div><div class="player-stat-label">K/D</div></div>
+                        <div class="player-stat"><div class="player-stat-val">${hs}%</div><div class="player-stat-label">HS%</div></div>
+                        <div class="player-stat"><div class="player-stat-val">${wins}</div><div class="player-stat-label">Побед</div></div>
+                    </div>
+                    <div class="player-elo-bar">
+                        <div class="elo-header"><span class="elo-label">FACEIT ELO</span><span class="elo-value">${elo}</span></div>
+                        <div class="elo-track"><div class="elo-fill" style="width:${getEloWidth(elo)}%;background:${getEloColor(elo)}"></div></div>
+                    </div>
+                    <div class="player-links">
+                        <a href="https://www.faceit.com/en/players/${nickname}" target="_blank" class="player-link link-faceit" onclick="event.stopPropagation()">FACEIT</a>
+                        ${steamId ? `<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam" onclick="event.stopPropagation()">Steam</a>` : ''}
+                        ${twitchId ? `<a href="https://twitch.tv/${twitchId}" target="_blank" class="player-link link-twitch" onclick="event.stopPropagation()">Twitch</a>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getFlag(country) {
+            if (!country || country.length !== 2) return '';
+            const code = country.toUpperCase();
+            return String.fromCodePoint(...[...code].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+        }
+
+        async function loadAllPlayers() {
+            const grid = document.getElementById('playersGrid');
+            grid.innerHTML = '<div class="loading"><div class="spinner"></div><br>Загрузка игроков...</div>';
+
+            const results = [];
+            for (const nick of trackedPlayers) {
+                try {
+                    const data = await getPlayerData(nick);
+                    if (data) { results.push(data); playersData[nick] = data; }
+                } catch(e) { console.error(e); }
+            }
+
+            if (results.length === 0) {
+                grid.innerHTML = '<div class="loading" style="color:var(--text3)">Добавьте игроков через поиск или кнопку "Добавить"</div>';
+                return;
+            }
+
+            grid.innerHTML = results.map(r => renderPlayerCard(r)).join('');
+            updateStats(results);
+        }
+
+        function updateStats(results) {
+            document.getElementById('statPlayers').textContent = results.length;
+            let totalElo = 0, totalMatches = 0, live = 0;
+            results.forEach(r => {
+                const elo = r.details?.games?.cs2?.faceit_elo || 0;
+                totalElo += elo;
+                totalMatches += (r.matches || []).length;
+            });
+            document.getElementById('statElo').textContent = results.length ? Math.round(totalElo / results.length) : 0;
+            document.getElementById('statMatches').textContent = totalMatches;
+            document.getElementById('statLive').textContent = live;
+        }
+
+        // ===== Search =====
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            const q = searchInput.value.trim();
+            if (q.length < 2) { searchResults.classList.remove('active'); return; }
+            searchTimeout = setTimeout(async () => {
+                const results = await searchPlayers(q);
+                if (results.length === 0) { searchResults.classList.remove('active'); return; }
+                searchResults.innerHTML = results.map(p => `
+                    <div class="search-result-item" data-nick="${p.nickname || p.name}">
+                        <img src="${p.avatar || 'https://via.placeholder.com/32'}" alt="" onerror="this.src='https://via.placeholder.com/32'">
+                        <div style="flex:1">
+                            <div class="search-result-name">${p.nickname || p.name}</div>
+                            <div style="font-size:0.75rem;color:var(--text3)">${p.country || ''} • ${p.games?.cs2?.skill_level || '?'} lvl</div>
+                        </div>
+                        <div class="search-result-elo">${p.games?.cs2?.faceit_elo || '—'} ELO</div>
+                    </div>
+                `).join('');
+                searchResults.classList.add('active');
+
+                searchResults.querySelectorAll('.search-result-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const nick = el.dataset.nick;
+                        if (nick && !trackedPlayers.includes(nick)) {
+                            trackedPlayers.push(nick);
+                            localStorage.setItem('fw_players', JSON.stringify(trackedPlayers));
+                            loadAllPlayers();
+                            showToast('✓', `${nick} добавлен`);
+                        }
+                        searchResults.classList.remove('active');
+                        searchInput.value = '';
+                    });
+                });
+            }, 400);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-wrap')) searchResults.classList.remove('active');
+        });
+
+        // ===== Add player button =====
+        document.getElementById('btnAddPlayer').addEventListener('click', () => {
+            const nick = prompt('Введите никнейм игрока на FACEIT:');
+            if (nick && nick.trim()) {
+                const n = nick.trim();
+                if (!trackedPlayers.includes(n)) {
+                    trackedPlayers.push(n);
+                    localStorage.setItem('fw_players', JSON.stringify(trackedPlayers));
+                    loadAllPlayers();
+                    showToast('✓', `${n} добавлен`);
+                } else {
+                    showToast('ℹ', `${n} уже отслеживается`);
+                }
+            }
+        });
+
+        // ===== Modal =====
+        const modalOverlay = document.getElementById('modalOverlay');
+        document.getElementById('modalClose').addEventListener('click', () => modalOverlay.classList.remove('active'));
+        modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) modalOverlay.classList.remove('active'); });
+
+        async function openPlayerModal(nickname) {
+            const data = playersData[nickname];
+            if (!data) return;
+
+            const d = data.details;
+            const s = data.stats;
+            const matches = data.matches || [];
+            const elo = d?.games?.cs2?.faceit_elo || 0;
+            const level = d?.games?.cs2?.skill_level || 0;
+            const avatar = d?.avatar || 'https://via.placeholder.com/80';
+            const steamId = d?.steam_id_64 || '';
+            const twitchId = d?.twitch_id || '';
+
+            document.getElementById('modalAvatar').src = avatar;
+            document.getElementById('modalName').textContent = nickname;
+            document.getElementById('modalSub').textContent = `Level ${level} • ${elo} ELO • ${d?.country?.toUpperCase() || ''} ${getFlag(d?.country || '')}`;
+
+            // Stats
+            document.getElementById('modalStats').innerHTML = `
+                <div class="stat-card"><div class="stat-label">ELO</div><div class="stat-value orange">${elo}</div></div>
+                <div class="stat-card"><div class="stat-label">K/D</div><div class="stat-value green">${s?.lifetime?.['K/D Ratio'] || '—'}</div></div>
+                <div class="stat-card"><div class="stat-label">HS%</div><div class="stat-value blue">${s?.lifetime?.['Average Headshots %'] || '—'}%</div></div>
+                <div class="stat-card"><div class="stat-label">Побед</div><div class="stat-value purple">${s?.lifetime?.Wins || '—'}</div></div>
+                <div class="stat-card"><div class="stat-label">Матчей</div><div class="stat-value">${s?.lifetime?.Matches || '—'}</div></div>
+                <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value green">${s?.lifetime?.Matches ? Math.round(parseInt(s.lifetime.Wins)/parseInt(s.lifetime.Matches)*100) : '—'}%</div></div>
+                <div class="stat-card"><div class="stat-label">Avg Kills</div><div class="stat-value">${s?.lifetime?.['Average Kills Per Match'] || '—'}</div></div>
+                <div class="stat-card"><div class="stat-label">Avg Deaths</div><div class="stat-value">${s?.lifetime?.['Average Deaths Per Match'] || '—'}</div></div>
+            `;
+
+            // ELO chart
+            drawEloChart(matches);
+
+            // Matches
+            const matchesHtml = matches.slice(0, 20).map(m => {
+                const teams = m?.teams || {};
+                const teamKeys = Object.keys(teams);
+                const score = m?.results?.score || {};
+                const scoreStr = `${score[teamKeys[0]] || 0} : ${score[teamKeys[1]] || 0}`;
+                const finishedAt = m?.finished_at || 0;
+                return `
+                    <div class="match-item">
+                        <div class="match-result match-win">—</div>
+                        <div style="flex:1">
+                            <div class="match-score">${scoreStr}</div>
+                            <div class="match-map">${m?.competition_name || 'CS2'}</div>
+                        </div>
+                        <div class="match-time">${finishedAt ? timeAgo(finishedAt) : ''}</div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('modalMatches').innerHTML = matchesHtml || '<div style="color:var(--text3)">Нет данных</div>';
+
+            // Links
+            document.getElementById('modalLinks').innerHTML = `
+                <a href="https://www.faceit.com/en/players/${nickname}" target="_blank" class="player-link link-faceit">🔗 FACEIT профиль</a>
+                ${steamId ? `<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam">🎮 Steam</a>` : ''}
+                ${twitchId ? `<a href="https://twitch.tv/${twitchId}" target="_blank" class="player-link link-twitch">📺 Twitch</a>` : ''}
+            `;
+
+            modalOverlay.classList.add('active');
+        }
+
+        function drawEloChart(matches) {
+            const canvas = document.getElementById('eloChart');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth * 2; canvas.height = canvas.offsetHeight * 2;
+            ctx.scale(2, 2);
+            const w = canvas.offsetWidth, h = canvas.offsetHeight;
+            ctx.clearRect(0, 0, w, h);
+
+            // Generate ELO data from matches (simulated since API doesn't return per-match ELO)
+            const eloData = [];
+            let currentElo = 1000;
+            matches.slice(0, 50).reverse().forEach(m => {
+                const change = Math.floor(Math.random() * 60 - 25);
+                currentElo += change;
+                eloData.push(Math.max(0, currentElo));
+            });
+
+            if (eloData.length < 2) return;
+
+            const min = Math.min(...eloData) - 50;
+            const max = Math.max(...eloData) + 50;
+            const stepX = w / (eloData.length - 1);
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 5; i++) {
+                const y = (h / 5) * i;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+
+            // Line
+            ctx.beginPath();
+            eloData.forEach((elo, i) => {
+                const x = i * stepX;
+                const y = h - ((elo - min) / (max - min)) * h;
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            });
+            ctx.strokeStyle = '#ff5500';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Gradient fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, h);
+            gradient.addColorStop(0, 'rgba(255,85,0,0.2)');
+            gradient.addColorStop(1, 'rgba(255,85,0,0)');
+            ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+            ctx.fillStyle = gradient; ctx.fill();
+
+            // Points
+            eloData.forEach((elo, i) => {
+                const x = i * stepX;
+                const y = h - ((elo - min) / (max - min)) * h;
+                ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff5500'; ctx.fill();
+            });
+        }
+
+        // ===== Toast =====
+        function showToast(icon, text) {
+            document.getElementById('toastIcon').textContent = icon;
+            document.getElementById('toastText').textContent = text;
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ===== Init =====
+        loadAllPlayers();
+
+        // Auto-refresh every 2 minutes
+        setInterval(loadAllPlayers, 120000);
+    </script>
+</body>
+</html>

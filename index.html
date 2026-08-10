@@ -315,7 +315,38 @@
             }catch(e){return null}
         }
 
+        // Cache system
+        const CACHE_KEY = 'fw_cache';
+        const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+        
+        function getCached(nick) {
+            try {
+                const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                const entry = cache[nick.toLowerCase()];
+                if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+            } catch(e) {}
+            return null;
+        }
+        
+        function setCache(nick, data) {
+            try {
+                const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+                cache[nick.toLowerCase()] = { data, ts: Date.now() };
+                // Keep only last 50 entries
+                const keys = Object.keys(cache);
+                if (keys.length > 50) {
+                    keys.sort((a, b) => cache[a].ts - cache[b].ts);
+                    keys.slice(0, keys.length - 50).forEach(k => delete cache[k]);
+                }
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+            } catch(e) {}
+        }
+
         async function getPlayerData(nickname){
+            // Check cache first
+            const cached = getCached(nickname);
+            if (cached) return cached;
+            
             try{
                 let details;
                 try{details=await faceitFetch(`/players?nickname=${encodeURIComponent(nickname)}&game=cs2`)}catch(e){
@@ -325,11 +356,40 @@
                     details=await faceitFetch(`/players/${player.player_id||player.guid}`)}
                 if(!details||!details.player_id)throw new Error('Player not found');
                 const playerId=details.player_id;
-                let stats=null;try{stats=await faceitFetch(`/players/${playerId}/stats/cs2`)}catch(e){}
-                let matches=[];try{const md=await faceitFetch(`/players/${playerId}/history?game=cs2&offset=0&limit=50`);matches=md?.items||[]}catch(e){}
-                const steamId=details?.steam_id_64||details?.games?.cs2?.game_player_id||'';
-                let cs2Ratings=null;if(steamId)cs2Ratings=await fetchCS2Ratings(steamId);
-                return{details,stats,matches,cs2Ratings,searchResult:{nickname:details.nickname}};
+                
+                // Fetch stats and matches in parallel
+                const [stats, matchData] = await Promise.all([
+                    faceitFetch(`/players/${playerId}/stats/cs2`).catch(() => null),
+                    faceitFetch(`/players/${playerId}/history?game=cs2&offset=0&limit=50`).catch(() => ({items: []}))
+                ]);
+                
+                const matches = matchData?.items || [];
+                const result = {details, stats, matches, cs2Ratings: null, searchResult: {nickname: details.nickname}};
+                
+                // Cache immediately (without csstats)
+                setCache(nickname, result);
+                
+                // Fetch Premier rating in background (don't block)
+                const steamId = details?.steam_id_64 || details?.games?.cs2?.game_player_id || '';
+                if (steamId) {
+                    fetchCS2Ratings(steamId).then(ratings => {
+                        if (ratings) {
+                            result.cs2Ratings = ratings;
+                            setCache(nickname, result);
+                            // Update card if already rendered
+                            const card = document.querySelector(`[data-nick="${details.nickname}"]`);
+                            if (card) {
+                                const premierEl = card.querySelector('.premier-badge');
+                                if (premierEl && ratings.premier) {
+                                    premierEl.textContent = ratings.premier.toLocaleString();
+                                    premierEl.style.display = 'flex';
+                                }
+                            }
+                        }
+                    }).catch(() => {});
+                }
+                
+                return result;
             }catch(e){console.error('Player load error:',e);return null}
         }
 
@@ -387,7 +447,10 @@
                     <div class="player-info"><div class="player-nick">${nickname}</div><div class="player-country">${country.toUpperCase()} ${getFlag(country)}</div></div>
                     <div class="player-level ${getLevelClass(st.level)}">${st.level}</div>
                 </div>
-                ${st.premier?`<div style="background:linear-gradient(90deg,rgba(255,215,0,0.15),rgba(255,165,0,0.05));border-radius:8px;padding:6px 10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:0.7rem;color:#ffd700;font-weight:600">PREMIER</span><span style="font-size:1rem;font-weight:800;color:#ffd700">${st.premier.toLocaleString()}</span></div>`:''}
+                <div class="premier-badge" style="background:linear-gradient(90deg,rgba(255,215,0,0.15),rgba(255,165,0,0.05));border-radius:8px;padding:6px 10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;${st.premier?'':'display:none'}">
+                    <span style="font-size:0.7rem;color:#ffd700;font-weight:600">PREMIER</span>
+                    <span class="premier-value" style="font-size:1rem;font-weight:800;color:#ffd700">${st.premier?st.premier.toLocaleString():''}</span>
+                </div>
                 <div class="player-stats-row">
                     <div class="player-stat"><div class="player-stat-val" style="color:var(--orange)">${st.elo}</div><div class="player-stat-label">ELO</div></div>
                     <div class="player-stat"><div class="player-stat-val">${st.kd}</div><div class="player-stat-label">K/D</div></div>
@@ -409,21 +472,31 @@
             const grid=document.getElementById('playersGrid');
             grid.innerHTML='<div class="loading"><div class="spinner"></div><br>Загрузка игроков...</div>';
             playersData={};
-            const results=[];
-            for(const nick of trackedPlayers){
-                try{const data=await getPlayerData(nick);if(data){results.push(data);playersData[nick]=data;playersData[data.details?.nickname||nick]=data}}catch(e){console.error(e)}
-            }
+            
+            // Load all players in parallel
+            const promises = trackedPlayers.map(nick => getPlayerData(nick));
+            const results = (await Promise.all(promises)).filter(r => r !== null);
+            
             if(results.length===0){grid.innerHTML='<div class="loading" style="color:var(--text3)">Добавьте игроков через поиск</div>';return}
+            
+            // Store data
+            results.forEach(r => {
+                const nick = r.details?.nickname || r.searchResult?.nickname;
+                if (nick) { playersData[nick] = r; }
+                // Also store under tracked name
+                const tracked = trackedPlayers.find(t => t.toLowerCase() === nick?.toLowerCase());
+                if (tracked) playersData[tracked] = r;
+            });
+            
             grid.innerHTML=results.map(r=>renderPlayerCard(r)).join('');
+            
             // Click listeners
             document.querySelectorAll('.player-card').forEach(card=>{
                 card.addEventListener('click',()=>{
                     const nick=card.dataset.nick;
-                    // Try exact match first, then case-insensitive
                     let data=playersData[nick];
                     if(!data){const key=Object.keys(playersData).find(k=>k.toLowerCase()===nick.toLowerCase());if(key)data=playersData[key]}
                     if(data)openPlayerModal(nick,data);
-                    else{console.error('No data found for',nick,'keys:',Object.keys(playersData))}
                 })
             });
             updateStats(results);

@@ -293,6 +293,7 @@
         </div>
         <div class="header-actions">
             <button class="btn-add" id="btnAddPlayer">+ Добавить</button>
+            <button class="btn-add" id="btnShare" style="background:linear-gradient(135deg,#4488ff,#9955ff)">🔗 Поделиться</button>
         </div>
     </header>
 
@@ -353,16 +354,40 @@
 
     <script>
         // ===== CONFIG =====
-        // Получи бесплатный API ключ на https://developers.faceit.com
-        // Вставь его сюда:
         const FACEIT_API_KEY = '28aaff41-edb1-442a-8cd7-c84e5e16c73b';
         const FACEIT_BASE = 'https://open.faceit.com/data/v4';
 
-        // Default tracked players (including the two required)
-        let trackedPlayers = JSON.parse(localStorage.getItem('fw_players') || 'null') || [
-            '_kolzer_',
-            'minilstudio'
-        ];
+        // Shared player list via URL hash or localStorage
+        const DEFAULT_PLAYERS = ['_kolzer_', 'minilstudio'];
+        
+        function getPlayersFromURL() {
+            const hash = window.location.hash.slice(1);
+            if (hash && hash.startsWith('players=')) {
+                try {
+                    return JSON.parse(decodeURIComponent(hash.slice(8)));
+                } catch(e) {}
+            }
+            return null;
+        }
+
+        function getPlayersFromStorage() {
+            try {
+                return JSON.parse(localStorage.getItem('fw_players'));
+            } catch(e) {}
+            return null;
+        }
+
+        let trackedPlayers = getPlayersFromURL() || getPlayersFromStorage() || [...DEFAULT_PLAYERS];
+
+        // Update URL when players change
+        function updateURL() {
+            const hash = 'players=' + encodeURIComponent(JSON.stringify(trackedPlayers));
+            window.location.hash = hash;
+            localStorage.setItem('fw_players', JSON.stringify(trackedPlayers));
+        }
+
+        // Initialize URL if not set
+        if (!getPlayersFromURL()) updateURL();
 
         let playersData = {};
         let searchTimeout = null;
@@ -620,7 +645,7 @@
                         const nick = el.dataset.nick;
                         if (nick && !trackedPlayers.includes(nick)) {
                             trackedPlayers.push(nick);
-                            localStorage.setItem('fw_players', JSON.stringify(trackedPlayers));
+                            updateURL();
                             loadAllPlayers();
                             showToast('✓', `${nick} добавлен`);
                         }
@@ -642,13 +667,23 @@
                 const n = nick.trim();
                 if (!trackedPlayers.includes(n)) {
                     trackedPlayers.push(n);
-                    localStorage.setItem('fw_players', JSON.stringify(trackedPlayers));
+                    updateURL();
                     loadAllPlayers();
                     showToast('✓', `${n} добавлен`);
                 } else {
                     showToast('ℹ', `${n} уже отслеживается`);
                 }
             }
+        });
+
+        // ===== Share button =====
+        document.getElementById('btnShare').addEventListener('click', () => {
+            updateURL();
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showToast('✓', 'Ссылка скопирована! Поделитесь ей с друзьями.');
+            }).catch(() => {
+                prompt('Скопируйте ссылку:', window.location.href);
+            });
         });
 
         // ===== Modal =====
@@ -668,22 +703,56 @@
             const avatar = d?.avatar || 'https://via.placeholder.com/80';
             const steamId = d?.steam_id_64 || '';
             const twitchId = d?.twitch_id || '';
+            const steamName = d?.steam_nickname || '';
+            const country = d?.country || '';
+            const memberships = d?.memberships || [];
+            const isPremium = memberships.includes('premium');
 
             document.getElementById('modalAvatar').src = avatar;
             document.getElementById('modalName').textContent = nickname;
-            document.getElementById('modalSub').textContent = `Level ${level} • ${elo} ELO • ${d?.country?.toUpperCase() || ''} ${getFlag(d?.country || '')}`;
+            document.getElementById('modalSub').innerHTML = `
+                Level ${level} • ${elo} ELO • ${country.toUpperCase()} ${getFlag(country)}
+                ${isPremium ? ' • <span style="color:#ff5500">★ Premium</span>' : ''}
+                ${steamName ? ` • Steam: ${steamName}` : ''}
+            `;
 
             // Stats
+            const winRate = s?.lifetime?.Matches ? Math.round(parseInt(s.lifetime.Wins)/parseInt(s.lifetime.Matches)*100) : 0;
+            const avgKills = s?.lifetime?.['Average Kills Per Match'] || '—';
+            const avgDeaths = s?.lifetime?.['Average Deaths Per Match'] || '—';
+            const avgAssists = s?.lifetime?.['Average Assists Per Match'] || '—';
+            const adr = s?.lifetime?.ADR || '—';
+            const kd = s?.lifetime?.['Average K/D Ratio'] || '—';
+            const hs = s?.lifetime?.['Average Headshots %'] || '—';
+            const totalMatches = s?.lifetime?.Matches || '—';
+            const wins = s?.lifetime?.Wins || '—';
+            const longestStreak = s?.lifetime?.['Longest Win Streak'] || '—';
+            const currentStreak = s?.lifetime?.['Current Win Streak'] || '—';
+            const entryRate = s?.lifetime?.['Entry Rate'] || '—';
+            const entrySuccess = s?.lifetime?.['Entry Success Rate'] || '—';
+            const flashSuccess = s?.lifetime?.['Flash Success Rate'] || '—';
+            const v1WinRate = s?.lifetime?.['1v1 Win Rate'] || '—';
+            const v2WinRate = s?.lifetime?.['1v2 Win Rate'] || '—';
+
             document.getElementById('modalStats').innerHTML = `
-                <div class="stat-card"><div class="stat-label">ELO</div><div class="stat-value orange">${elo}</div></div>
-                <div class="stat-card"><div class="stat-label">K/D</div><div class="stat-value green">${s?.lifetime?.['Average K/D Ratio'] || '—'}</div></div>
-                <div class="stat-card"><div class="stat-label">HS%</div><div class="stat-value blue">${s?.lifetime?.['Average Headshots %'] || '—'}%</div></div>
-                <div class="stat-card"><div class="stat-label">Побед</div><div class="stat-value purple">${s?.lifetime?.Wins || '—'}</div></div>
-                <div class="stat-card"><div class="stat-label">Матчей</div><div class="stat-value">${s?.lifetime?.Matches || '—'}</div></div>
-                <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value green">${s?.lifetime?.Matches ? Math.round(parseInt(s.lifetime.Wins)/parseInt(s.lifetime.Matches)*100) : '—'}%</div></div>
-                <div class="stat-card"><div class="stat-label">ADR</div><div class="stat-value">${s?.lifetime?.ADR || '—'}</div></div>
-                <div class="stat-card"><div class="stat-label">Avg Kills</div><div class="stat-value">${s?.lifetime?.['Average Kills Per Match'] || '—'}</div></div>
-                <div class="stat-card"><div class="stat-label">Avg Deaths</div><div class="stat-value">${s?.lifetime?.['Average Deaths Per Match'] || '—'}</div></div>
+                <div class="stat-card"><div class="stat-label">FACEIT ELO</div><div class="stat-value orange">${elo}</div></div>
+                <div class="stat-card"><div class="stat-label">Level</div><div class="stat-value" style="color:var(--orange)">${level}</div></div>
+                <div class="stat-card"><div class="stat-label">K/D</div><div class="stat-value green">${kd}</div></div>
+                <div class="stat-card"><div class="stat-label">HS%</div><div class="stat-value blue">${hs}%</div></div>
+                <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value green">${winRate}%</div></div>
+                <div class="stat-card"><div class="stat-label">Матчей</div><div class="stat-value">${totalMatches}</div></div>
+                <div class="stat-card"><div class="stat-label">Побед</div><div class="stat-value purple">${wins}</div></div>
+                <div class="stat-card"><div class="stat-label">ADR</div><div class="stat-value">${adr}</div></div>
+                <div class="stat-card"><div class="stat-label">Avg Kills</div><div class="stat-value">${avgKills}</div></div>
+                <div class="stat-card"><div class="stat-label">Avg Deaths</div><div class="stat-value">${avgDeaths}</div></div>
+                <div class="stat-card"><div class="stat-label">Avg Assists</div><div class="stat-value">${avgAssists}</div></div>
+                <div class="stat-card"><div class="stat-label">Win Streak</div><div class="stat-value green">${longestStreak}</div></div>
+                <div class="stat-card"><div class="stat-label">Current Streak</div><div class="stat-value">${currentStreak}</div></div>
+                <div class="stat-card"><div class="stat-label">Entry Rate</div><div class="stat-value">${entryRate}</div></div>
+                <div class="stat-card"><div class="stat-label">Entry Win%</div><div class="stat-value">${entrySuccess}</div></div>
+                <div class="stat-card"><div class="stat-label">1v1 Win%</div><div class="stat-value">${v1WinRate}</div></div>
+                <div class="stat-card"><div class="stat-label">1v2 Win%</div><div class="stat-value">${v2WinRate}</div></div>
+                <div class="stat-card"><div class="stat-label">Flash Win%</div><div class="stat-value">${flashSuccess}</div></div>
             `;
 
             // ELO chart - bar chart based on match results
@@ -719,9 +788,10 @@
 
             // Links
             document.getElementById('modalLinks').innerHTML = `
-                <a href="https://www.faceit.com/en/players/${nickname}" target="_blank" class="player-link link-faceit">🔗 FACEIT профиль</a>
+                <a href="https://www.faceit.com/en/players/${encodeURIComponent(nickname)}" target="_blank" class="player-link link-faceit">🔗 FACEIT профиль</a>
                 ${steamId ? `<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam">🎮 Steam</a>` : ''}
                 ${twitchId ? `<a href="https://twitch.tv/${twitchId}" target="_blank" class="player-link link-twitch">📺 Twitch</a>` : ''}
+                ${steamId ? `<a href="https://csstats.gg/player/${steamId}" target="_blank" class="player-link link-steam" style="background:rgba(68,255,136,0.15);color:#44ff88">📊 CS Stats</a>` : ''}
             `;
 
             modalOverlay.classList.add('active');

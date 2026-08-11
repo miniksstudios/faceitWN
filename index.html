@@ -17,25 +17,25 @@
         .bg-orb-3{width:350px;height:350px;top:50%;left:50%;background:rgba(68,136,255,0.04);animation-delay:-10s}
         @keyframes floatOrb{0%{transform:translate(0,0) scale(1)}100%{transform:translate(50px,-30px) scale(1.1)}}
 
-        .header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between}
-        .logo{display:flex;align-items:center;gap:10px}
-        .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--orange),var(--orange2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#fff}
-        .logo-text{font-size:1.3rem;font-weight:800;color:var(--text)}
+        .header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 1rem;height:60px;display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+        .logo{display:flex;align-items:center;gap:8px;flex-shrink:0}
+        .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--orange),var(--orange2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff}
+        .logo-text{font-size:1.1rem;font-weight:800;color:var(--text);white-space:nowrap}
         .logo-text span{color:var(--orange)}
-        .search-wrap{position:relative;width:400px}
-        .search-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:10px 16px 10px 42px;color:var(--text);font-size:0.95rem;font-family:var(--font);outline:none;transition:0.2s}
+        .search-wrap{position:relative;flex:1;min-width:150px;max-width:400px}
+        .search-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:8px 12px 8px 36px;color:var(--text);font-size:0.85rem;font-family:var(--font);outline:none;transition:0.2s}
         .search-input:focus{border-color:var(--orange);box-shadow:0 0 20px var(--glow)}
-        .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:1rem}
+        .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:0.9rem}
         .search-results{position:absolute;top:100%;left:0;right:0;margin-top:6px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;max-height:300px;overflow-y:auto;display:none;z-index:200}
         .search-results.active{display:block}
-        .search-result-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:0.15s;border-bottom:1px solid var(--border)}
+        .search-result-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:0.15s;border-bottom:1px solid var(--border)}
         .search-result-item:last-child{border-bottom:none}
         .search-result-item:hover{background:var(--bg3)}
-        .search-result-item img{width:32px;height:32px;border-radius:8px}
-        .search-result-name{font-weight:600;font-size:0.9rem}
-        .search-result-elo{font-size:0.8rem;color:var(--orange);font-weight:700}
-        .header-actions{display:flex;gap:10px;align-items:center}
-        .btn-add{background:linear-gradient(135deg,var(--orange),var(--orange2));color:#fff;border:none;border-radius:10px;padding:8px 18px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:0.2s;display:flex;align-items:center;gap:6px}
+        .search-result-item img{width:28px;height:28px;border-radius:6px}
+        .search-result-name{font-weight:600;font-size:0.85rem}
+        .search-result-elo{font-size:0.75rem;color:var(--orange);font-weight:700}
+        .header-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
+        .btn-add{background:linear-gradient(135deg,var(--orange),var(--orange2));color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:0.2s;display:flex;align-items:center;gap:4px;white-space:nowrap}
         .btn-add:hover{transform:translateY(-2px);box-shadow:0 4px 20px var(--glow)}
 
         .main{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:30px 2rem}
@@ -130,7 +130,34 @@
         .toast{position:fixed;bottom:30px;right:30px;z-index:600;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:10px;transform:translateY(100px);opacity:0;transition:0.3s}
         .toast.show{transform:translateY(0);opacity:1}
 
-        @media(max-width:768px){.stats-bar{grid-template-columns:repeat(2,1fr)}.players-grid{grid-template-columns:1fr}.search-wrap{width:100%}.header{padding:0 1rem}.main{padding:20px 1rem}.tabs{flex-wrap:wrap}.compare-table{font-size:0.8rem}}
+        @media(max-width:768px){
+            .stats-bar{grid-template-columns:repeat(2,1fr);gap:10px}
+            .players-grid{grid-template-columns:1fr}
+            .search-wrap{min-width:100px}
+            .header{padding:0 0.5rem;height:auto;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+            .header-actions{flex-wrap:wrap}
+            .btn-add{padding:6px 10px;font-size:0.75rem}
+            .main{padding:15px 0.8rem}
+            .tabs{flex-wrap:wrap}
+            .tab-btn{padding:8px;font-size:0.8rem}
+            .compare-table{font-size:0.75rem}
+            .compare-table th,.compare-table td{padding:8px 6px}
+            .stat-card{padding:12px}
+            .stat-value{font-size:1.4rem}
+            .modal{margin:10px;max-height:95vh}
+            .modal-header{padding:16px;flex-wrap:wrap}
+            .modal-body{padding:12px}
+            .modal-stats-grid{grid-template-columns:repeat(2,1fr)!important}
+            .player-card{padding:14px}
+            .player-stats-row{grid-template-columns:repeat(2,1fr)}
+            .lb-item{padding:10px;gap:10px}
+            .toast{left:10px;right:10px;bottom:10px}
+        }
+        @media(max-width:480px){
+            .logo-text{font-size:0.9rem}
+            .search-wrap{min-width:80px}
+            .header-actions .btn-add:not(:first-child){display:none}
+        }
     </style>
 </head>
 <body>
@@ -296,9 +323,16 @@
 
         function extractSteamId(input){
             if(!input)return null;input=input.trim();
+            // Steam ID64
             if(/^7656119\d{10}$/.test(input))return input;
+            // Steam profile URL
             const pm=input.match(/steamcommunity\.com\/profiles\/(7656119\d{10})/);
             if(pm)return pm[1];
+            // Steam custom URL - return the custom name for lookup
+            const cm=input.match(/steamcommunity\.com\/id\/([^\/\?]+)/);
+            if(cm)return 'custom:'+cm[1];
+            // Plain Steam ID64 without prefix
+            if(/^\d{17}$/.test(input))return input;
             return null;
         }
 
@@ -306,7 +340,18 @@
             if(!query||query.length<2)return[];
             try{
                 const sid=extractSteamId(query);
-                if(sid){try{return[await faceitFetch(`/players?game=cs2&game_player_id=${sid}`)]}catch(e){}}
+                if(sid){
+                    if(sid.startsWith('custom:')){
+                        // Custom URL - try to find by name
+                        const customName=sid.substring(7);
+                        try{return[await faceitFetch(`/players?nickname=${encodeURIComponent(customName)}&game=cs2`)]}catch(e){
+                            try{const d=await faceitFetch(`/search/v1?query=${encodeURIComponent(customName)}&game=cs2&limit=5`);return d?.items||d?.players?.items||[]}catch(e2){return[]}}
+                    }
+                    // Steam ID64
+                    try{return[await faceitFetch(`/players?game=cs2&game_player_id=${sid}`)]}catch(e){
+                        try{return[await faceitFetch(`/players/${sid}`)]}catch(e2){}}
+                }
+                // Regular nickname search
                 try{return[await faceitFetch(`/players?nickname=${encodeURIComponent(query)}&game=cs2`)]}catch(e){
                     try{const d=await faceitFetch(`/search/v1?query=${encodeURIComponent(query)}&game=cs2&limit=8`);return d?.items||d?.players?.items||[]}catch(e2){return[]}}
             }catch(e){return[]}
@@ -314,21 +359,29 @@
 
         async function fetchCS2Ratings(steamId64){
             if(!steamId64)return null;
-            try{
-                const proxyUrl=`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://csstats.gg/player/${steamId64}`)}`;
-                const resp=await fetch(proxyUrl,{signal:AbortSignal.timeout(8000)});
-                if(!resp.ok)return null;
-                const html=await resp.text();
-                const ratings={premier:null,premierBest:null};
-                const seasonRegex=/S(\d+)[\s\S]*?(\d{1,2},?\d{3,5})/g;
-                let match,latestSeason=0;
-                while((match=seasonRegex.exec(html))!==null){
-                    const season=parseInt(match[1]);const rating=parseInt(match[2].replace(/,/g,''));
-                    if(season>latestSeason&&rating>0&&rating<50000){latestSeason=season;ratings.premier=rating}}
-                const bestMatch=html.match(/Best[\s\S]*?(\d{1,2},?\d{3,5})/);
-                if(bestMatch)ratings.premierBest=parseInt(bestMatch[1].replace(/,/g,''));
-                return ratings;
-            }catch(e){return null}
+            const proxies=[
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://csstats.gg/player/${steamId64}`)}`,
+                `https://corsproxy.io/?url=${encodeURIComponent(`https://csstats.gg/player/${steamId64}`)}`,
+                `https://api.codetabs.com/v1/proxy?quest=https://csstats.gg/player/${steamId64}`
+            ];
+            for(const proxyUrl of proxies){
+                try{
+                    const resp=await fetch(proxyUrl,{signal:AbortSignal.timeout(6000)});
+                    if(!resp.ok)continue;
+                    const html=await resp.text();
+                    if(!html||html.length<100)continue;
+                    const ratings={premier:null,premierBest:null};
+                    const seasonRegex=/S(\d+)[\s\S]*?(\d{1,2},?\d{3,5})/g;
+                    let match,latestSeason=0;
+                    while((match=seasonRegex.exec(html))!==null){
+                        const season=parseInt(match[1]);const rating=parseInt(match[2].replace(/,/g,''));
+                        if(season>latestSeason&&rating>0&&rating<50000){latestSeason=season;ratings.premier=rating}}
+                    const bestMatch=html.match(/Best[\s\S]*?(\d{1,2},?\d{3,5})/);
+                    if(bestMatch)ratings.premierBest=parseInt(bestMatch[1].replace(/,/g,''));
+                    if(ratings.premier||ratings.premierBest)return ratings;
+                }catch(e){continue}
+            }
+            return null;
         }
 
         // Cache system
@@ -455,6 +508,8 @@
             const country=d?.country||'';
             const steamId=d?.steam_id_64||'';
             const twitchId=d?.twitch_id||'';
+            // If no twitch_id from FACEIT, try the same nickname as Twitch username
+            const twitchName=twitchId||nickname;
             const st=getPlayerStats(data);
             const cardId='card_'+nickname.replace(/[^a-zA-Z0-9]/g,'_');
             return`<div class="player-card" id="${cardId}" data-nick="${nickname}">
@@ -474,11 +529,11 @@
                     <div class="player-stat"><div class="player-stat-val" style="color:${st.clutchRate>=30?'var(--green)':st.clutchRate>=20?'var(--blue)':'var(--text2)'}">${st.clutchRate}%</div><div class="player-stat-label">Clutch</div></div>
                 </div>
                 <div class="player-elo-bar"><div class="elo-header"><span class="elo-label">FACEIT ELO</span><span class="elo-value">${st.elo}</span></div><div class="elo-track"><div class="elo-fill" style="width:${getEloWidth(st.elo)}%;background:${getEloColor(st.elo)}"></div></div></div>
-                <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text3);margin-bottom:8px"><span>Раундов/матч: ${st.avgRounds}</span><span>Clutch: ${st.clutchWins||0}/${st.clutchTotal||0}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text3);margin-bottom:8px"><span>Раундов/матч: ${st.avgRounds}</span><span>Clutch: ${st.v1w+st.v2w}/${st.v1c+st.v2c}</span></div>
                 <div class="player-links">
                     <a href="https://www.faceit.com/en/players/${encodeURIComponent(nickname)}" target="_blank" class="player-link link-faceit" onclick="event.stopPropagation()">FACEIT</a>
                     ${steamId?`<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam" onclick="event.stopPropagation()">Steam</a>`:''}
-                    ${twitchId?`<a href="https://twitch.tv/${twitchId}" target="_blank" class="player-link link-twitch" onclick="event.stopPropagation()">Twitch</a>`:''}
+                    <a href="https://twitch.tv/${encodeURIComponent(twitchName)}" target="_blank" class="player-link link-twitch" onclick="event.stopPropagation()">Twitch</a>
                 </div>
             </div>`;
         }
@@ -626,6 +681,7 @@
             const avatar=d?.avatar||'https://via.placeholder.com/80';
             const steamId=d?.steam_id_64||'';
             const twitchId=d?.twitch_id||'';
+            const twitchName=twitchId||nickname;
             const steamName=d?.steam_nickname||'';
             const country=d?.country||'';
             const isPremium=(d?.memberships||[]).includes('premium');
@@ -678,7 +734,7 @@
             document.getElementById('modalLinks').innerHTML=`
                 <a href="https://www.faceit.com/en/players/${encodeURIComponent(nickname)}" target="_blank" class="player-link link-faceit">🔗 FACEIT</a>
                 ${steamId?`<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam">🎮 Steam</a>`:''}
-                ${twitchId?`<a href="https://twitch.tv/${twitchId}" target="_blank" class="player-link link-twitch">📺 Twitch</a>`:''}
+                <a href="https://twitch.tv/${encodeURIComponent(twitchName)}" target="_blank" class="player-link link-twitch">📺 Twitch</a>
                 ${steamId?`<a href="https://csstats.gg/player/${steamId}" target="_blank" class="player-link" style="background:rgba(68,255,136,0.15);color:#44ff88">📊 CS Stats</a>`:''}
             `;
             modalOverlay.classList.add('active');

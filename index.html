@@ -1,792 +1,378 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FACEIT Watch — CS2 Stats</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        :root{--bg:#0a0a0f;--bg2:#12121a;--bg3:#1a1a28;--card:#16161fcc;--border:#2a2a3a;--text:#e8e8f0;--text2:#8888aa;--text3:#55556a;--orange:#ff5500;--orange2:#ff8800;--green:#44ff88;--red:#ff4466;--blue:#4488ff;--purple:#9955ff;--gold:#ffd700;--glow:rgba(255,85,0,0.15);--font:'Inter',sans-serif}
-        *{margin:0;padding:0;box-sizing:border-box}
-        html{scroll-behavior:smooth}
-        body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-        #bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
-        .bg-orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;animation:floatOrb 15s ease-in-out infinite alternate}
-        .bg-orb-1{width:500px;height:500px;top:-150px;left:-100px;background:rgba(255,85,0,0.08)}
-        .bg-orb-2{width:400px;height:400px;bottom:-150px;right:-100px;background:rgba(153,85,255,0.06);animation-delay:-5s}
-        .bg-orb-3{width:350px;height:350px;top:50%;left:50%;background:rgba(68,136,255,0.04);animation-delay:-10s}
-        @keyframes floatOrb{0%{transform:translate(0,0) scale(1)}100%{transform:translate(50px,-30px) scale(1.1)}}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FACEIT Watch — CS2 Stats</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--bg2:#12121a;--card:#16161fcc;--border:#2a2a3a;--text:#e8e8f0;--text2:#8888aa;--text3:#55556a;--orange:#ff5500;--green:#44ff88;--red:#ff4466;--blue:#4488ff;--purple:#9955ff;--gold:#ffd700}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-overflow-scrolling:touch}
+canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
 
-        .header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 1rem;height:60px;display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
-        .logo{display:flex;align-items:center;gap:8px;flex-shrink:0}
-        .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--orange),var(--orange2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff}
-        .logo-text{font-size:1.1rem;font-weight:800;color:var(--text);white-space:nowrap}
-        .logo-text span{color:var(--orange)}
-        .search-wrap{position:relative;flex:1;min-width:150px;max-width:400px}
-        .search-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:8px 12px 8px 36px;color:var(--text);font-size:0.85rem;font-family:var(--font);outline:none;transition:0.2s}
-        .search-input:focus{border-color:var(--orange);box-shadow:0 0 20px var(--glow)}
-        .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:0.9rem}
-        .search-results{position:absolute;top:100%;left:0;right:0;margin-top:6px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;max-height:300px;overflow-y:auto;display:none;z-index:200}
-        .search-results.active{display:block}
-        .search-result-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:0.15s;border-bottom:1px solid var(--border)}
-        .search-result-item:last-child{border-bottom:none}
-        .search-result-item:hover{background:var(--bg3)}
-        .search-result-item img{width:28px;height:28px;border-radius:6px}
-        .search-result-name{font-weight:600;font-size:0.85rem}
-        .search-result-elo{font-size:0.75rem;color:var(--orange);font-weight:700}
-        .header-actions{display:flex;gap:6px;align-items:center;flex-shrink:0}
-        .btn-add{background:linear-gradient(135deg,var(--orange),var(--orange2));color:#fff;border:none;border-radius:10px;padding:7px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:0.2s;display:flex;align-items:center;gap:4px;white-space:nowrap}
-        .btn-add:hover{transform:translateY(-2px);box-shadow:0 4px 20px var(--glow)}
+.hdr{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 12px;height:56px;display:flex;align-items:center;gap:8px}
+.logo{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.logo-i{width:30px;height:30px;background:linear-gradient(135deg,var(--orange),#ff8800);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;color:#fff}
+.logo-t{font-size:1rem;font-weight:800}.logo-t span{color:var(--orange)}
+.sbox{flex:1;min-width:100px;position:relative}
+.sinp{width:100%;background:#1a1a28;border:1px solid var(--border);border-radius:10px;padding:8px 12px 8px 32px;color:var(--text);font-size:.85rem;font-family:inherit;outline:none}
+.sinp:focus{border-color:var(--orange)}
+.sico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:.85rem}
+.sres{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;max-height:260px;overflow-y:auto;display:none;z-index:200}
+.sres.on{display:block}
+.sri{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.sri:last-child{border:none}.sri:hover{background:#1a1a28}
+.sri img{width:28px;height:28px;border-radius:6px}
+.btns{display:flex;gap:6px;flex-shrink:0}
+.btn{background:linear-gradient(135deg,var(--orange),#ff8800);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
+.btn:hover{transform:translateY(-1px)}.btn.b2{background:linear-gradient(135deg,#4488ff,#9955ff)}.btn.b3{background:linear-gradient(135deg,#ff5500,#ff8800);text-decoration:none;display:inline-flex;align-items:center}
+a.btn{color:#fff}
 
-        .main{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:30px 2rem}
-        .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px}
-        .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;backdrop-filter:blur(10px);transition:0.3s}
-        .stat-card:hover{border-color:var(--orange);transform:translateY(-3px)}
-        .stat-label{font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-        .stat-value{font-size:1.8rem;font-weight:800}
-        .stat-value.orange{color:var(--orange)}.stat-value.green{color:var(--green)}.stat-value.blue{color:var(--blue)}.stat-value.purple{color:var(--purple)}
+.main{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:16px 12px}
+.sb{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+.sl{font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.sv{font-size:1.4rem;font-weight:800}
+.sv.o{color:var(--orange)}.sv.g{color:var(--green)}.sv.b{color:var(--blue)}.sv.p{color:var(--purple)}
 
-        /* Tabs */
-        .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--bg2);border-radius:12px;padding:4px;border:1px solid var(--border)}
-        .tab-btn{flex:1;padding:10px;border:none;background:transparent;color:var(--text2);font-size:0.9rem;font-weight:600;cursor:pointer;border-radius:8px;font-family:var(--font);transition:0.2s}
-        .tab-btn:hover{color:var(--text);background:var(--bg3)}
-        .tab-btn.active{background:linear-gradient(135deg,rgba(255,85,0,0.2),rgba(153,85,255,0.2));color:var(--text)}
-        .tab-panel{display:none}.tab-panel.active{display:block}
+.tabs{display:flex;gap:3px;margin-bottom:16px;background:var(--bg2);border-radius:10px;padding:3px;border:1px solid var(--border)}
+.tab{flex:1;padding:8px;border:none;background:0;color:var(--text2);font-size:.82rem;font-weight:600;cursor:pointer;border-radius:7px;font-family:inherit;transition:.15s}
+.tab:hover{color:var(--text)}.tab.on{background:linear-gradient(135deg,rgba(255,85,0,.2),rgba(153,85,255,.2));color:#fff}
+.tp{display:none}.tp.on{display:block}
 
-        .section-title{font-size:1.4rem;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:10px}
-        .section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--orange)}
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.pc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:.25s;position:relative;overflow:hidden}
+.pc:hover{border-color:var(--orange);transform:translateY(-3px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.pc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--orange),#ff8800,transparent)}
+.pt{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.pa{width:44px;height:44px;border-radius:10px;object-fit:cover;border:2px solid var(--border)}
+.pi{flex:1}.pn{font-size:1rem;font-weight:700}.py{font-size:.75rem;color:var(--text2)}
+.pl{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;color:#fff}
+.l1,.l2{background:#2a2a3a}.l3,.l4{background:#3a6a3a}.l5,.l6{background:#2a5a7a}.l7{background:#5a2a7a}.l8{background:#7a2a2a}.l9{background:#7a6a2a}.l10{background:linear-gradient(135deg,#ff5500,#ff8800)}
+.pb{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.ps{text-align:center}.pv{font-size:.9rem;font-weight:700}.pl2{font-size:.6rem;color:var(--text3);text-transform:uppercase}
+.eb{margin-bottom:8px}.eh{display:flex;justify-content:space-between;margin-bottom:3px}.el{font-size:.7rem;color:var(--text2)}.ev{font-size:.78rem;font-weight:700;color:var(--orange)}
+.et{height:5px;background:var(--bg);border-radius:3px;overflow:hidden}.ef{height:100%;border-radius:3px;transition:width .4s}
+.ll{display:flex;gap:5px;margin-top:6px}
+.la{padding:4px 8px;border-radius:6px;font-size:.65rem;font-weight:600;text-decoration:none;transition:.15s;display:inline-flex;align-items:center;gap:3px}
+.lf{background:rgba(255,85,0,.15);color:var(--orange)}.lf:hover{background:rgba(255,85,0,.3)}
+.ls{background:rgba(68,136,255,.15);color:var(--blue)}.ls:hover{background:rgba(68,136,255,.3)}
+.lt{background:rgba(153,85,255,.15);color:var(--purple)}.lt:hover{background:rgba(153,85,255,.3)}
+.prem{background:linear-gradient(90deg,rgba(255,215,0,.12),rgba(255,165,0,.04));border-radius:7px;padding:5px 8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.prem-l{font-size:.65rem;color:var(--gold);font-weight:600}.prem-v{font-size:.9rem;font-weight:800;color:var(--gold)}
 
-        /* Players grid */
-        .players-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
-        .player-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;cursor:pointer;transition:0.3s;position:relative;overflow:hidden}
-        .player-card:hover{border-color:var(--orange);transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,0,0,0.3)}
-        .player-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--orange),var(--orange2),transparent)}
-        .player-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
-        .player-avatar{width:48px;height:48px;border-radius:12px;object-fit:cover;border:2px solid var(--border)}
-        .player-info{flex:1}
-        .player-nick{font-size:1.1rem;font-weight:700;margin-bottom:2px}
-        .player-country{font-size:0.8rem;color:var(--text2)}
-        .player-level{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.2rem;color:#fff}
-        .lvl-1,.lvl-2{background:linear-gradient(135deg,#2a2a2a,#3a3a3a)}.lvl-3,.lvl-4{background:linear-gradient(135deg,#4a7a2a,#5a8a3a)}.lvl-5,.lvl-6{background:linear-gradient(135deg,#2a6a8a,#3a7a9a)}.lvl-7{background:linear-gradient(135deg,#6a2a8a,#7a3a9a)}.lvl-8{background:linear-gradient(135deg,#8a2a2a,#9a3a3a)}.lvl-9{background:linear-gradient(135deg,#8a6a2a,#9a7a3a)}.lvl-10{background:linear-gradient(135deg,#ff5500,#ff8800)}
-        .player-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-        .player-stat{text-align:center}
-        .player-stat-val{font-size:1rem;font-weight:700}
-        .player-stat-label{font-size:0.65rem;color:var(--text3);text-transform:uppercase}
-        .player-elo-bar{margin-bottom:10px}
-        .elo-header{display:flex;justify-content:space-between;margin-bottom:4px}
-        .elo-label{font-size:0.75rem;color:var(--text2)}
-        .elo-value{font-size:0.85rem;font-weight:700;color:var(--orange)}
-        .elo-track{height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
-        .elo-fill{height:100%;border-radius:3px;transition:width 0.5s ease}
-        .player-links{display:flex;gap:6px}
-        .player-link{padding:5px 10px;border-radius:8px;font-size:0.7rem;font-weight:600;text-decoration:none;transition:0.2s;display:flex;align-items:center;gap:4px}
-        .link-faceit{background:rgba(255,85,0,0.15);color:var(--orange)}.link-faceit:hover{background:rgba(255,85,0,0.3)}
-        .link-steam{background:rgba(68,136,255,0.15);color:var(--blue)}.link-steam:hover{background:rgba(68,136,255,0.3)}
-        .link-twitch{background:rgba(153,85,255,0.15);color:var(--purple)}.link-twitch:hover{background:rgba(153,85,255,0.3)}
+/* Compare */
+.ctable{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--border);font-size:.82rem}
+.ctable th{background:#1a1a28;padding:10px 8px;text-align:left;font-size:.65rem;color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border)}
+.ctable td{padding:8px;border-bottom:1px solid var(--border)}.ctable tr:hover td{background:rgba(255,85,0,.04)}
+.best{color:var(--green);font-weight:700}
 
-        /* Compare table */
-        .compare-table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--border)}
-        .compare-table th{background:var(--bg3);padding:12px 16px;text-align:left;font-size:0.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);position:sticky;top:0}
-        .compare-table td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:0.9rem}
-        .compare-table tr:hover td{background:rgba(255,85,0,0.05)}
-        .compare-table .best{color:var(--green);font-weight:700}
-        .compare-table .worst{color:var(--red)}
+/* Leaderboard */
+.li{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:.2s}
+.li:hover{border-color:var(--orange);transform:translateX(3px)}
+.lr{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem}
+.lr.g{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#000}.lr.s{background:linear-gradient(135deg,#c0c0c0,#a0a0a0);color:#000}.lr.b{background:linear-gradient(135deg,#cd7f32,#a0652a);color:#fff}.lr.n{background:#1a1a28;color:var(--text2)}
+.li2{flex:1}.ln{font-weight:700;font-size:.9rem}.ls2{font-size:.72rem;color:var(--text2)}.lv{font-size:1rem;font-weight:800}
 
-        /* Leaderboard */
-        .lb-item{display:flex;align-items:center;gap:16px;padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;transition:0.2s;cursor:pointer}
-        .lb-item:hover{border-color:var(--orange);transform:translateX(4px)}
-        .lb-rank{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem}
-        .lb-rank.gold{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#000}
-        .lb-rank.silver{background:linear-gradient(135deg,#c0c0c0,#a0a0a0);color:#000}
-        .lb-rank.bronze{background:linear-gradient(135deg,#cd7f32,#a0652a);color:#fff}
-        .lb-rank.normal{background:var(--bg3);color:var(--text2)}
-        .lb-info{flex:1}
-        .lb-name{font-weight:700;font-size:1rem}
-        .lb-sub{font-size:0.8rem;color:var(--text2)}
-        .lb-value{font-size:1.2rem;font-weight:800}
+/* Modal */
+.mo{position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:12px}
+.mo.on{display:flex}
+.md{background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:750px;max-height:92vh;overflow-y:auto;position:relative}
+.mc{position:absolute;top:12px;right:12px;background:#1a1a28;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:1.1rem;z-index:10}
+.mc:hover{background:var(--red);color:#fff}
+.mh{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
+.mav{width:64px;height:64px;border-radius:12px;object-fit:cover}
+.mn{font-size:1.3rem;font-weight:800}.ms{font-size:.82rem;color:var(--text2)}
+.mb{padding:16px}.ms2{margin-bottom:18px}.mst{font-size:.75rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.mg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mc2{background:#0a0a14;border:1px solid var(--border);border-radius:10px;padding:10px}
+.ml{font-size:.6rem;color:var(--text3);text-transform:uppercase;margin-bottom:3px}.mv2{font-size:.95rem;font-weight:800}
+.ec{width:100%;height:160px;background:#0a0a14;border-radius:10px;position:relative;overflow:hidden;padding:14px}
+.mi{display:flex;align-items:center;gap:10px;padding:8px;background:#0a0a14;border-radius:8px;margin-bottom:5px}
+.mr{padding:3px 8px;border-radius:5px;font-size:.7rem;font-weight:700;min-width:42px;text-align:center}
+.mw{background:rgba(68,255,136,.15);color:var(--green)}.mlo{background:rgba(255,68,102,.15);color:var(--red)}
+.ms3{font-size:.82rem;font-weight:600;flex:1}.mm{font-size:.72rem;color:var(--text2)}.mt{font-size:.68rem;color:var(--text3)}
 
-        /* Modal */
-        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
-        .modal-overlay.active{display:flex}
-        .modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:800px;max-height:90vh;overflow-y:auto;position:relative}
-        .modal-close{position:absolute;top:16px;right:16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:1.2rem;transition:0.2s;z-index:10}
-        .modal-close:hover{background:var(--red);color:#fff}
-        .modal-header{padding:30px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px}
-        .modal-avatar{width:80px;height:80px;border-radius:16px;object-fit:cover}
-        .modal-name{font-size:1.6rem;font-weight:800}
-        .modal-sub{font-size:0.9rem;color:var(--text2)}
-        .modal-body{padding:24px}
-        .modal-section{margin-bottom:24px}
-        .modal-section-title{font-size:0.85rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
-        .elo-chart{width:100%;height:200px;background:var(--bg);border-radius:12px;position:relative;overflow:hidden;padding:20px}
-        .match-item{display:flex;align-items:center;gap:14px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:8px}
-        .match-result{padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:700;min-width:50px;text-align:center}
-        .match-win{background:rgba(68,255,136,0.15);color:var(--green)}.match-loss{background:rgba(255,68,102,0.15);color:var(--red)}
-        .match-score{font-size:0.9rem;font-weight:600;flex:1}.match-map{font-size:0.8rem;color:var(--text2)}.match-time{font-size:0.75rem;color:var(--text3)}
+.ld{text-align:center;padding:30px;color:var(--text3)}.sp{display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tst{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);z-index:600;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 18px;font-size:.85rem;opacity:0;transition:.3s;white-space:nowrap}
+.tst.on{transform:translateX(-50%) translateY(0);opacity:1}
 
-        .loading{text-align:center;padding:40px;color:var(--text3)}
-        .spinner{display:inline-block;width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin 0.8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .toast{position:fixed;bottom:30px;right:30px;z-index:600;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:10px;transform:translateY(100px);opacity:0;transition:0.3s}
-        .toast.show{transform:translateY(0);opacity:1}
-
-        @media(max-width:768px){
-            .stats-bar{grid-template-columns:repeat(2,1fr);gap:10px}
-            .players-grid{grid-template-columns:1fr}
-            .search-wrap{min-width:100px}
-            .header{padding:0 0.5rem;height:auto;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
-            .header-actions{flex-wrap:wrap}
-            .btn-add{padding:6px 10px;font-size:0.75rem}
-            .main{padding:15px 0.8rem}
-            .tabs{flex-wrap:wrap}
-            .tab-btn{padding:8px;font-size:0.8rem}
-            .compare-table{font-size:0.75rem}
-            .compare-table th,.compare-table td{padding:8px 6px}
-            .stat-card{padding:12px}
-            .stat-value{font-size:1.4rem}
-            .modal{margin:10px;max-height:95vh}
-            .modal-header{padding:16px;flex-wrap:wrap}
-            .modal-body{padding:12px}
-            .modal-stats-grid{grid-template-columns:repeat(2,1fr)!important}
-            .player-card{padding:14px}
-            .player-stats-row{grid-template-columns:repeat(2,1fr)}
-            .lb-item{padding:10px;gap:10px}
-            .toast{left:10px;right:10px;bottom:10px}
-        }
-        @media(max-width:480px){
-            .logo-text{font-size:0.9rem}
-            .search-wrap{min-width:80px}
-            .header-actions .btn-add:not(:first-child){display:none}
-        }
-    </style>
+@media(max-width:640px){
+.hdr{padding:0 8px;height:52px;gap:6px}
+.logo-t{font-size:.9rem}.btns{gap:4px}.btn{padding:6px 8px;font-size:.7rem}
+.sb{grid-template-columns:repeat(2,1fr);gap:6px}.sc{padding:10px}.sv{font-size:1.1rem}
+.pg{grid-template-columns:1fr}.pc{padding:12px}
+.tabs{flex-wrap:wrap}.tab{padding:6px;font-size:.75rem}
+.mo{padding:6px}.md{max-height:96vh}.mh{padding:14px}.mav{width:48px;height:48px}
+.mg{grid-template-columns:repeat(2,1fr)}.mc2{padding:7px}
+.ctable{font-size:.7rem}.ctable th,.ctable td{padding:6px 4px}
+}
+</style>
 </head>
 <body>
-    <canvas id="bg-canvas"></canvas>
-    <div class="bg-orb bg-orb-1"></div>
-    <div class="bg-orb bg-orb-2"></div>
-    <div class="bg-orb bg-orb-3"></div>
+<canvas id="bg"></canvas>
 
-    <header class="header">
-        <div class="logo"><div class="logo-icon">F</div><div class="logo-text">FACEIT<span>Watch</span></div></div>
-        <div class="search-wrap">
-            <span class="search-icon">🔍</span>
-            <input type="text" class="search-input" id="searchInput" placeholder="Никнейм, Steam ссылка или Steam ID..." autocomplete="off">
-            <div class="search-results" id="searchResults"></div>
-        </div>
-        <div class="header-actions">
-            <button class="btn-add" id="btnAddPlayer">+ Добавить</button>
-            <button class="btn-add" id="btnShare" style="background:linear-gradient(135deg,#4488ff,#9955ff)">🔗 Поделиться</button>
-            <a href="https://www.donationalerts.com/r/miniksstudios" target="_blank" class="btn-add" style="background:linear-gradient(135deg,#ff5500,#ff8800);text-decoration:none">❤ Поддержать</a>
-        </div>
-    </header>
+<div class="hdr">
+<div class="logo"><div class="logo-i">F</div><div class="logo-t">FACEIT<span>Watch</span></div></div>
+<div class="sbox"><span class="sico">🔍</span><input class="sinp" id="si" placeholder="Ник, Steam ссылка..." autocomplete="off"><div class="sres" id="sr"></div></div>
+<div class="btns">
+<button class="btn" id="ba">+ Добавить</button>
+<button class="btn b2" id="bs">🔗</button>
+<a href="https://www.donationalerts.com/r/miniksstudios" target="_blank" class="btn b3">❤</a>
+</div>
+</div>
 
-    <div class="main">
-        <div class="stats-bar">
-            <div class="stat-card"><div class="stat-label">Игроков</div><div class="stat-value orange" id="statPlayers">0</div></div>
-            <div class="stat-card"><div class="stat-label">Средний ELO</div><div class="stat-value green" id="statElo">0</div></div>
-            <div class="stat-card"><div class="stat-label">Матчей</div><div class="stat-value blue" id="statMatches">0</div></div>
-            <div class="stat-card"><div class="stat-label">Средний K/D</div><div class="stat-value purple" id="statKD">0</div></div>
-        </div>
+<div class="main">
+<div class="sb">
+<div class="sc"><div class="sl">Игроков</div><div class="sv o" id="x1">0</div></div>
+<div class="sc"><div class="sl">Средний ELO</div><div class="sv g" id="x2">0</div></div>
+<div class="sc"><div class="sl">Матчей</div><div class="sv b" id="x3">0</div></div>
+<div class="sc"><div class="sl">Средний K/D</div><div class="sv p" id="x4">0</div></div>
+</div>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('players', this)">Игроки</button>
-            <button class="tab-btn" onclick="switchTab('compare', this)">Сравнение</button>
-            <button class="tab-btn" onclick="switchTab('leaderboard', this)">Топ</button>
-        </div>
+<div class="tabs">
+<button class="tab on" onclick="sw('p',this)">Игроки</button>
+<button class="tab" onclick="sw('c',this)">Сравнение</button>
+<button class="tab" onclick="sw('l',this)">Топ</button>
+</div>
 
-        <!-- Players Tab -->
-        <div class="tab-panel active" id="tab-players">
-            <div class="players-grid" id="playersGrid">
-                <div class="loading"><div class="spinner"></div><br>Загрузка игроков...</div>
-            </div>
-        </div>
+<div class="tp on" id="tp"><div class="pg" id="pg"><div class="ld"><div class="sp"></div><br>Загрузка...</div></div></div>
 
-        <!-- Compare Tab -->
-        <div class="tab-panel" id="tab-compare">
-            <div id="compareContent">
-                <div class="loading"><div class="spinner"></div><br>Загрузка...</div>
-            </div>
-        </div>
+<div class="tp" id="tc"><div id="cc"><div class="ld"><div class="sp"></div></div></div></div>
 
-        <!-- Leaderboard Tab -->
-        <div class="tab-panel" id="tab-leaderboard">
-            <div class="tabs" style="margin-bottom:20px;max-width:500px">
-                <button class="tab-btn active" onclick="switchLB('elo')" id="lb-elo-btn">FACEIT ELO</button>
-                <button class="tab-btn" onclick="switchLB('premier')" id="lb-premier-btn">Premier</button>
-                <button class="tab-btn" onclick="switchLB('kd')" id="lb-kd-btn">K/D</button>
-                <button class="tab-btn" onclick="switchLB('wr')" id="lb-wr-btn">Win Rate</button>
-            </div>
-            <div id="leaderboardContent">
-                <div class="loading"><div class="spinner"></div><br>Загрузка...</div>
-            </div>
-        </div>
-    </div>
+<div class="tp" id="tl">
+<div class="tabs" style="margin-bottom:14px;max-width:460px">
+<button class="tab on" onclick="swl('elo',this)" id="lb1">ELO</button>
+<button class="tab" onclick="swl('premier',this)" id="lb2">Premier</button>
+<button class="tab" onclick="swl('kd',this)" id="lb3">K/D</button>
+<button class="tab" onclick="swl('wr',this)" id="lb4">Win Rate</button>
+</div>
+<div id="lc"><div class="ld"><div class="sp"></div></div></div>
+</div>
+</div>
 
-    <!-- Modal -->
-    <div class="modal-overlay" id="modalOverlay">
-        <div class="modal">
-            <div class="modal-close" id="modalClose">✕</div>
-            <div class="modal-header">
-                <img class="modal-avatar" id="modalAvatar" src="" alt="">
-                <div>
-                    <div class="modal-name" id="modalName">—</div>
-                    <div class="modal-sub" id="modalSub">—</div>
-                </div>
-            </div>
-            <div class="modal-body">
-                <div class="modal-section">
-                    <div class="modal-section-title">Статистика</div>
-                    <div id="modalStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"></div>
-                </div>
-                <div class="modal-section">
-                    <div class="modal-section-title">ELO — последние 50 матчей</div>
-                    <div class="elo-chart"><canvas id="eloChart"></canvas></div>
-                </div>
-                <div class="modal-section">
-                    <div class="modal-section-title">История матчей</div>
-                    <div id="modalMatches"></div>
-                </div>
-                <div class="modal-section">
-                    <div class="modal-section-title">Ссылки</div>
-                    <div id="modalLinks" class="player-links"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="mo" id="mo">
+<div class="md">
+<div class="mc" id="mx">✕</div>
+<div class="mh"><img class="mav" id="mav" src=""><div><div class="mn" id="mn">—</div><div class="ms" id="ms">—</div></div></div>
+<div class="mb">
+<div class="ms2"><div class="mst">Статистика</div><div class="mg" id="mg"></div></div>
+<div class="ms2"><div class="mst">ELO — последние 50 матчей</div><div class="ec"><canvas id="ec"></canvas></div></div>
+<div class="ms2"><div class="mst">История матчей</div><div id="mm"></div></div>
+<div class="ms2"><div class="mst">Ссылки</div><div class="ll" id="ml"></div></div>
+</div>
+</div>
+</div>
 
-    <div class="toast" id="toast"><span id="toastIcon">✓</span><span id="toastText">—</span></div>
+<div class="tst" id="tst"></div>
 
-    <script>
-        const FACEIT_API_KEY = '28aaff41-edb1-442a-8cd7-c84e5e16c73b';
-        const FACEIT_BASE = 'https://open.faceit.com/data/v4';
-        const API_BASE = 'https://faceitwn-api.miniksstudio.workers.dev';
+<script>
+const FK='28aaff41-edb1-442a-8cd7-c84e5e16c73b';
+const FB='https://open.faceit.com/data/v4';
+const AB='https://faceitwn-api.miniksstudio.workers.dev';
+let TP=[],PD={},ST=null;
 
-        let trackedPlayers = ['_kolzer_', 'minilstudio'];
-        let playersData = {};
-        let searchTimeout = null;
+// Init
+(async()=>{
+try{const r=await fetch(AB+'/api/players',{cache:'no-store'});if(r.ok){const d=await r.json();if(Array.isArray(d)&&d.length>0)TP=d}}catch(e){}
+if(TP.length===0)TP=['_kolzer_','minilstudio'];
+loadAll();
+setInterval(loadAll,120000);
+})();
 
-        // Load shared list from API
-        async function initPlayerList() {
-            try {
-                const resp = await fetch(`${API_BASE}/api/players`, { cache: 'no-store' });
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (Array.isArray(data) && data.length > 0) trackedPlayers = data;
-                }
-            } catch(e) { console.log('API load failed, using defaults'); }
-            
-            loadAllPlayers();
-        }
+// Particles
+const cv=document.getElementById('bg'),cx=cv.getContext('2d');
+function rz(){cv.width=innerWidth;cv.height=innerHeight}rz();onresize=rz;
+let pp=[];for(let i=0;i<50;i++)pp.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,s:Math.random()*2+.4,sx:(Math.random()-.5)*.15,sy:(Math.random()-.5)*.15,c:`rgba(255,${80+Math.random()*60},0,${Math.random()*.25+.05})`});
+(function an(){cx.clearRect(0,0,cv.width,cv.height);pp.forEach(p=>{p.x+=p.sx;p.y+=p.sy;if(p.x<0)p.x=cv.width;if(p.x>cv.width)p.x=0;if(p.y<0)p.y=cv.height;if(p.y>cv.height)p.y=0;cx.beginPath();cx.arc(p.x,p.y,p.s,0,6.28);cx.fillStyle=p.c;cx.fill()});requestAnimationFrame(an)})();
 
-        // Add player to shared list
-        async function addPlayerShared(nick) {
-            if (!nick || trackedPlayers.includes(nick)) return;
-            trackedPlayers.push(nick);
-            
-            // Save to server
-            try {
-                await fetch(`${API_BASE}/api/players`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nickname: nick })
-                });
-            } catch(e) { console.error('Failed to save to API:', e); }
-        }
+// Tabs
+function sw(n,el){document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.remove('on'));document.getElementById('t'+n).classList.add('on');if(el)el.classList.add('on');if(n==='c')rComp();if(n==='l')rLB('elo')}
 
-        // Tabs
-        function switchTab(name, el) {
-            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tabs .tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + name).classList.add('active');
-            if (el) el.classList.add('active');
-            if (name === 'compare') renderCompare();
-            if (name === 'leaderboard') renderLeaderboard('elo');
-        }
+// API
+async function ff(ep){const r=await fetch(FB+ep,{headers:{'Authorization':'Bearer '+FK,'Accept':'application/json'}});if(!r.ok)throw new Error(r.status);return r.json()}
 
-        // Particles
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
-        resizeCanvas();window.addEventListener('resize',resizeCanvas);
-        let particles=[];
-        function initParticles(){particles=[];for(let i=0;i<60;i++){particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,size:Math.random()*2+0.5,speedX:(Math.random()-0.5)*0.2,speedY:(Math.random()-0.5)*0.2,color:`rgba(255,${85+Math.random()*60},0,${Math.random()*0.3+0.05})`})}}
-        initParticles();
-        function animateParticles(){ctx.clearRect(0,0,canvas.width,canvas.height);particles.forEach(p=>{p.x+=p.speedX;p.y+=p.speedY;if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill()});for(let i=0;i<particles.length;i++){for(let j=i+1;j<particles.length;j++){const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<100){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle=`rgba(255,85,0,${0.05*(1-dist/100)})`;ctx.lineWidth=0.5;ctx.stroke()}}}requestAnimationFrame(animateParticles)}
-        animateParticles();
+function extSt(i){if(!i)return null;i=i.trim();if(/^7656119\d{10}$/.test(i))return i;const m=i.match(/steamcommunity\.com\/profiles\/(7656119\d{10})/);if(m)return m[1];if(/^\d{17}$/.test(i))return i;return null}
 
-        // API
-        async function faceitFetch(endpoint){
-            const resp=await fetch(`${FACEIT_BASE}${endpoint}`,{headers:{'Authorization':`Bearer ${FACEIT_API_KEY}`,'Accept':'application/json'}});
-            if(!resp.ok)throw new Error(`API ${resp.status}`);
-            return resp.json();
-        }
+async function search(q){
+if(!q||q.length<2)return[];
+try{
+const sid=extSt(q);
+if(sid){try{return[await ff('/players?game=cs2&game_player_id='+sid)]}catch(e){}}
+try{return[await ff('/players?nickname='+encodeURIComponent(q)+'&game=cs2')]}catch(e){
+try{const d=await ff('/search/v1?query='+encodeURIComponent(q)+'&game=cs2&limit=6');return d?.items||d?.players?.items||[]}catch(e2){return[]}}
+}catch(e){return[]}
+}
 
-        function extractSteamId(input){
-            if(!input)return null;input=input.trim();
-            // Steam ID64
-            if(/^7656119\d{10}$/.test(input))return input;
-            // Steam profile URL
-            const pm=input.match(/steamcommunity\.com\/profiles\/(7656119\d{10})/);
-            if(pm)return pm[1];
-            // Steam custom URL - return the custom name for lookup
-            const cm=input.match(/steamcommunity\.com\/id\/([^\/\?]+)/);
-            if(cm)return 'custom:'+cm[1];
-            // Plain Steam ID64 without prefix
-            if(/^\d{17}$/.test(input))return input;
-            return null;
-        }
+// Cache
+const CK='fw_c',CT=5*60000;
+function gc(n){try{const c=JSON.parse(localStorage.getItem(CK)||'{}');const e=c[n.toLowerCase()];if(e&&Date.now()-e.t<CT)return e.d}catch(e){}return null}
+function sc(n,d){try{const c=JSON.parse(localStorage.getItem(CK)||'{}');c[n.toLowerCase()]={d,t:Date.now()};const k=Object.keys(c);if(k.length>50){k.sort((a,b)=>c[a].t-c[b].t).slice(0,k.length-50).forEach(x=>delete c[x])}localStorage.setItem(CK,JSON.stringify(c))}catch(e){}}
 
-        async function searchPlayers(query){
-            if(!query||query.length<2)return[];
-            try{
-                const sid=extractSteamId(query);
-                if(sid){
-                    if(sid.startsWith('custom:')){
-                        // Custom URL - try to find by name
-                        const customName=sid.substring(7);
-                        try{return[await faceitFetch(`/players?nickname=${encodeURIComponent(customName)}&game=cs2`)]}catch(e){
-                            try{const d=await faceitFetch(`/search/v1?query=${encodeURIComponent(customName)}&game=cs2&limit=5`);return d?.items||d?.players?.items||[]}catch(e2){return[]}}
-                    }
-                    // Steam ID64
-                    try{return[await faceitFetch(`/players?game=cs2&game_player_id=${sid}`)]}catch(e){
-                        try{return[await faceitFetch(`/players/${sid}`)]}catch(e2){}}
-                }
-                // Regular nickname search
-                try{return[await faceitFetch(`/players?nickname=${encodeURIComponent(query)}&game=cs2`)]}catch(e){
-                    try{const d=await faceitFetch(`/search/v1?query=${encodeURIComponent(query)}&game=cs2&limit=8`);return d?.items||d?.players?.items||[]}catch(e2){return[]}}
-            }catch(e){return[]}
-        }
+async function getP(nick){
+const ch=gc(nick);if(ch)return ch;
+try{
+let d;try{d=await ff('/players?nickname='+encodeURIComponent(nick)+'&game=cs2')}catch(e){const s=await ff('/search/v1?query='+encodeURIComponent(nick)+'&game=cs2&limit=1');const p=(s?.items||s?.players?.items||[])[0];if(!p)throw 0;d=await ff('/players/'+(p.player_id||p.guid))}
+if(!d||!d.player_id)throw 0;const pid=d.player_id;
+const[st,md]=await Promise.all([ff('/players/'+pid+'/stats/cs2').catch(()=>null),ff('/players/'+pid+'/history?game=cs2&offset=0&limit=50').catch(()=>({items:[]}))]);
+const r={d,st,m:md?.items||[],cr:null,sr:{nickname:d.nickname}};
+sc(nick,r);
+const sid=d?.steam_id_64||d?.games?.cs2?.game_player_id||'';
+if(sid)fetchPrem(sid).then(v=>{if(v){r.cr=v;sc(nick,r);const c=document.querySelector('[data-n="'+d.nickname+'"] .prem-v');if(c&&v.premier)c.textContent=v.premier.toLocaleString();const c2=document.querySelector('[data-n="'+d.nickname+'"] .prem');if(c2)c2.style.display='flex'}}).catch(()=>{});
+return r;
+}catch(e){return null}
+}
 
-        async function fetchCS2Ratings(steamId64){
-            if(!steamId64)return null;
-            const proxies=[
-                `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://csstats.gg/player/${steamId64}`)}`,
-                `https://corsproxy.io/?url=${encodeURIComponent(`https://csstats.gg/player/${steamId64}`)}`,
-                `https://api.codetabs.com/v1/proxy?quest=https://csstats.gg/player/${steamId64}`
-            ];
-            for(const proxyUrl of proxies){
-                try{
-                    const resp=await fetch(proxyUrl,{signal:AbortSignal.timeout(6000)});
-                    if(!resp.ok)continue;
-                    const html=await resp.text();
-                    if(!html||html.length<100)continue;
-                    const ratings={premier:null,premierBest:null};
-                    const seasonRegex=/S(\d+)[\s\S]*?(\d{1,2},?\d{3,5})/g;
-                    let match,latestSeason=0;
-                    while((match=seasonRegex.exec(html))!==null){
-                        const season=parseInt(match[1]);const rating=parseInt(match[2].replace(/,/g,''));
-                        if(season>latestSeason&&rating>0&&rating<50000){latestSeason=season;ratings.premier=rating}}
-                    const bestMatch=html.match(/Best[\s\S]*?(\d{1,2},?\d{3,5})/);
-                    if(bestMatch)ratings.premierBest=parseInt(bestMatch[1].replace(/,/g,''));
-                    if(ratings.premier||ratings.premierBest)return ratings;
-                }catch(e){continue}
-            }
-            return null;
-        }
+async function fetchPrem(sid){
+if(!sid)return null;
+const px=['https://api.allorigins.win/raw?url='+encodeURIComponent('https://csstats.gg/player/'+sid),'https://corsproxy.io/?url='+encodeURIComponent('https://csstats.gg/player/'+sid)];
+for(const u of px){try{const r=await fetch(u,{signal:AbortSignal.timeout(5000)});if(!r.ok)continue;const h=await res.text();if(!h||h.length<100)continue;const v={premier:null,best:null};const re=/S(\d+)[\s\S]*?(\d{1,2},?\d{3,5})/g;let m,ls=0;while((m=re.exec(h))!==null){const s=parseInt(m[1]),ra=parseInt(m[2].replace(/,/g,''));if(s>ls&&ra>0&&ra<50000){ls=s;v.premier=ra}}const bm=h.match(/Best[\s\S]*?(\d{1,2},?\d{3,5})/);if(bm)v.best=parseInt(bm[1].replace(/,/g,''));if(v.premier||v.best)return v}catch(e){continue}}
+return null
+}
 
-        // Cache system
-        const CACHE_KEY = 'fw_cache';
-        const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-        
-        function getCached(nick) {
-            try {
-                const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-                const entry = cache[nick.toLowerCase()];
-                if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
-            } catch(e) {}
-            return null;
-        }
-        
-        function setCache(nick, data) {
-            try {
-                const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-                cache[nick.toLowerCase()] = { data, ts: Date.now() };
-                // Keep only last 50 entries
-                const keys = Object.keys(cache);
-                if (keys.length > 50) {
-                    keys.sort((a, b) => cache[a].ts - cache[b].ts);
-                    keys.slice(0, keys.length - 50).forEach(k => delete cache[k]);
-                }
-                localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-            } catch(e) {}
-        }
+// Helpers
+function gl(l){return'lvl-'+Math.min(Math.max(l||1,1),10)}
+function ge(e){return e>=2000?'#ff5500':e>=1500?'#9955ff':e>=1000?'#4488ff':'#44ff88'}
+function gw(e){return Math.min(Math.max(e/3000*100,5),100)}
+function gf(c){if(!c||c.length!==2)return'';return String.fromCodePoint(...[...c.toUpperCase()].map(ch=>0x1F1E6+ch.charCodeAt(0)-65))}
+function ta(ts){const d=Date.now()/1000-ts;if(d<60)return'только что';if(d<3600)return Math.floor(d/60)+'м назад';if(d<86400)return Math.floor(d/3600)+'ч назад';return Math.floor(d/86400)+'д назад'}
+function gs(s,k,d='0'){return s?.lifetime?.[k]||d}
+function gn(s,k,d=0){return parseInt(s?.lifetime?.[k]||d)}
 
-        async function getPlayerData(nickname){
-            // Check cache first
-            const cached = getCached(nickname);
-            if (cached) return cached;
-            
-            try{
-                let details;
-                try{details=await faceitFetch(`/players?nickname=${encodeURIComponent(nickname)}&game=cs2`)}catch(e){
-                    const search=await faceitFetch(`/search/v1?query=${encodeURIComponent(nickname)}&game=cs2&limit=1`);
-                    const player=(search?.items||search?.players?.items||[])[0];
-                    if(!player)throw new Error('Player not found');
-                    details=await faceitFetch(`/players/${player.player_id||player.guid}`)}
-                if(!details||!details.player_id)throw new Error('Player not found');
-                const playerId=details.player_id;
-                
-                // Fetch stats and matches in parallel
-                const [stats, matchData] = await Promise.all([
-                    faceitFetch(`/players/${playerId}/stats/cs2`).catch(() => null),
-                    faceitFetch(`/players/${playerId}/history?game=cs2&offset=0&limit=50`).catch(() => ({items: []}))
-                ]);
-                
-                const matches = matchData?.items || [];
-                const result = {details, stats, matches, cs2Ratings: null, searchResult: {nickname: details.nickname}};
-                
-                // Cache immediately (without csstats)
-                setCache(nickname, result);
-                
-                // Fetch Premier rating in background (don't block)
-                const steamId = details?.steam_id_64 || details?.games?.cs2?.game_player_id || '';
-                if (steamId) {
-                    fetchCS2Ratings(steamId).then(ratings => {
-                        if (ratings) {
-                            result.cs2Ratings = ratings;
-                            setCache(nickname, result);
-                            // Update card if already rendered
-                            const card = document.querySelector(`[data-nick="${details.nickname}"]`);
-                            if (card) {
-                                const premierEl = card.querySelector('.premier-badge');
-                                if (premierEl && ratings.premier) {
-                                    premierEl.textContent = ratings.premier.toLocaleString();
-                                    premierEl.style.display = 'flex';
-                                }
-                            }
-                        }
-                    }).catch(() => {});
-                }
-                
-                return result;
-            }catch(e){console.error('Player load error:',e);return null}
-        }
+function gstats(r){
+const d=r.d,s=r.st,elo=d?.games?.cs2?.faceit_elo||0,lvl=d?.games?.cs2?.skill_level||0;
+const kd=gs(s,'Average K/D Ratio'),hs=gs(s,'Average Headshots %'),adr=gs(s,'ADR'),kpr=gs(s,'Average K/R Ratio');
+const tm=gn(s,'Matches'),w=gn(s,'Wins'),wr=tm>0?Math.round(w/tm*100):0;
+const v1c=gn(s,'Total 1v1 Count'),v1w=gn(s,'Total 1v1 Wins'),v2c=gn(s,'Total 1v2 Count'),v2w=gn(s,'Total 1v2 Wins');
+const ct=v1c+v2c,cw=v1w+v2w,cr=ct>0?Math.round(cw/ct*100):0;
+const tr=gn(s,'Total Rounds with extended stats'),ar=tm>0?Math.round(tr/tm):0;
+const pm=r.cr?.premier,pb=r.cr?.best;
+return{elo,lvl,kd,hs,adr,kpr,tm,w,wr,v1c,v1w,v2c,v2w,cr,ar,tr,pm,pb,ls:gs(s,'Longest Win Streak'),er:gs(s,'Entry Rate'),es:gs(s,'Entry Success Rate'),ak:gs(s,'Average Kills Per Match'),ad:gs(s,'Average Deaths Per Match'),aa:gs(s,'Average Assists Per Match')};
+}
 
-        // UI helpers
-        function getLevelClass(l){return`lvl-${Math.min(Math.max(l||1,1),10)}`}
-        function getEloColor(e){if(e>=2000)return'#ff5500';if(e>=1500)return'#9955ff';if(e>=1000)return'#4488ff';return'#44ff88'}
-        function getEloWidth(e){return Math.min(Math.max((e/3000)*100,5),100)}
-        function getFlag(c){if(!c||c.length!==2)return'';const code=c.toUpperCase();return String.fromCodePoint(...[...code].map(ch=>0x1F1E6+ch.charCodeAt(0)-65))}
-        function timeAgo(ts){const diff=Date.now()/1000-ts;if(diff<60)return'только что';if(diff<3600)return`${Math.floor(diff/60)}м назад`;if(diff<86400)return`${Math.floor(diff/3600)}ч назад`;return`${Math.floor(diff/86400)}д назад`}
+// Render card
+function rCard(r){
+const d=r.d,nick=d?.nickname||r.sr?.nickname||'?',av=d?.avatar||'https://via.placeholder.com/48',co=d?.country||'';
+const sid=d?.steam_id_64||'',tid=d?.twitch_id||'',st=gstats(r);
+return`<div class="pc" data-n="${nick}">
+<div class="pt"><img class="pa" src="${av}" onerror="this.src='https://via.placeholder.com/48'"><div class="pi"><div class="pn">${nick}</div><div class="py">${co.toUpperCase()} ${gf(co)}</div></div><div class="pl ${gl(st.lvl)}">${st.lvl}</div></div>
+<div class="prem" style="${st.pm?'':'display:none'}"><span class="prem-l">PREMIER</span><span class="prem-v">${st.pm?st.pm.toLocaleString():''}</span></div>
+<div class="pb"><div class="ps"><div class="pv o">${st.elo}</div><div class="pl2">ELO</div></div><div class="ps"><div class="pv">${st.kd}</div><div class="pl2">K/D</div></div><div class="ps"><div class="pv">${st.hs}%</div><div class="pl2">HS%</div></div><div class="ps"><div class="pv" style="color:${st.cr>=30?'var(--green)':st.cr>=20?'var(--blue)':'var(--text2)'}">${st.cr}%</div><div class="pl2">Clutch</div></div></div>
+<div class="eb"><div class="eh"><span class="el">FACEIT ELO</span><span class="ev">${st.elo}</span></div><div class="et"><div class="ef" style="width:${gw(st.elo)}%;background:${ge(st.elo)}"></div></div></div>
+<div style="display:flex;justify-content:space-between;font-size:.65rem;color:var(--text3);margin-bottom:6px"><span>Раундов/матч: ${st.ar}</span><span>Clutch: ${st.v1w+st.v2w}/${st.v1c+st.v2c}</span></div>
+<div class="ll"><a href="https://www.faceit.com/en/players/${encodeURIComponent(nick)}" target="_blank" class="la lf" onclick="event.stopPropagation()">FACEIT</a>${sid?`<a href="https://steamcommunity.com/profiles/${sid}" target="_blank" class="la ls" onclick="event.stopPropagation()">Steam</a>`:''}${tid?`<a href="https://twitch.tv/${encodeURIComponent(tid)}" target="_blank" class="la lt" onclick="event.stopPropagation()">Twitch</a>`:''}</div>
+</div>`;
+}
 
-        function getStat(s,key,def='0'){return s?.lifetime?.[key]||def}
-        function getStatN(s,key,def=0){return parseInt(s?.lifetime?.[key]||def)}
+// Load all
+async function loadAll(){
+const g=document.getElementById('pg');g.innerHTML='<div class="ld"><div class="sp"></div><br>Загрузка...</div>';
+PD={};
+try{
+const ps=TP.map(n=>getP(n).catch(()=>null));
+const rs=(await Promise.all(ps)).filter(r=>r!==null);
+if(rs.length===0){g.innerHTML='<div class="ld">Добавьте игроков через поиск</div>';return}
+rs.forEach(r=>{const n=r.d?.nickname||r.sr?.nickname;if(n){PD[n]=r;const t=TP.find(x=>x.toLowerCase()===n.toLowerCase());if(t)PD[t]=r}});
+g.innerHTML=rs.map(rCard).join('');
+g.querySelectorAll('.pc').forEach(c=>{c.onclick=()=>{const n=c.dataset.n;let d=PD[n];if(!d){const k=Object.keys(PD).find(x=>x.toLowerCase()===n.toLowerCase());if(k)d=PD[k]}if(d)oModal(n,d)}});
+updStats(rs);
+}catch(e){console.error(e);g.innerHTML='<div class="ld" style="color:var(--red)">Ошибка загрузки</div>'}
+}
 
-        function getPlayerStats(data){
-            const d=data.details,s=data.stats;
-            const elo=d?.games?.cs2?.faceit_elo||0;
-            const level=d?.games?.cs2?.skill_level||0;
-            const kd=getStat(s,'Average K/D Ratio','0');
-            const hs=getStat(s,'Average Headshots %','0');
-            const adr=getStat(s,'ADR','0');
-            const kpr=getStat(s,'Average K/R Ratio','0');
-            const totalMatches=getStatN(s,'Matches',0);
-            const wins=getStatN(s,'Wins',0);
-            const winRate=totalMatches>0?Math.round(wins/totalMatches*100):0;
-            const v1c=getStatN(s,'Total 1v1 Count'),v1w=getStatN(s,'Total 1v1 Wins');
-            const v2c=getStatN(s,'Total 1v2 Count'),v2w=getStatN(s,'Total 1v2 Wins');
-            const clutchTotal=v1c+v2c,clutchWins=v1w+v2w;
-            const clutchRate=clutchTotal>0?Math.round(clutchWins/clutchTotal*100):0;
-            const totalRounds=getStatN(s,'Total Rounds with extended stats');
-            const avgRounds=totalMatches>0?Math.round(totalRounds/totalMatches):0;
-            const premier=data.cs2Ratings?.premier||null;
-            const premierBest=data.cs2Ratings?.premierBest||null;
-            const longestStreak=getStat(s,'Longest Win Streak','—');
-            const entryRate=getStat(s,'Entry Rate','—');
-            const entrySuccess=getStat(s,'Entry Success Rate','—');
-            const avgKills=getStat(s,'Average Kills Per Match','—');
-            const avgDeaths=getStat(s,'Average Deaths Per Match','—');
-            const avgAssists=getStat(s,'Average Assists Per Match','—');
-            return{elo,level,kd,hs,adr,kpr,totalMatches,wins,winRate,v1c,v1w,v2c,v2w,clutchRate,avgRounds,totalRounds,premier,premierBest,longestStreak,entryRate,entrySuccess,avgKills,avgDeaths,avgAssists};
-        }
+function updStats(rs){
+document.getElementById('x1').textContent=rs.length;
+let te=0,tm=0,tk=0;rs.forEach(r=>{const s=gstats(r);te+=s.elo;tm+=s.tm;tk+=parseFloat(s.kd)||0});
+document.getElementById('x2').textContent=rs.length?Math.round(te/rs.length):0;
+document.getElementById('x3').textContent=tm;
+document.getElementById('x4').textContent=rs.length?(tk/rs.length).toFixed(2):'0';
+}
 
-        // Render player card
-        function renderPlayerCard(data){
-            const d=data.details;
-            const nickname=d?.nickname||data.searchResult?.nickname||'Unknown';
-            const avatar=d?.avatar||'https://via.placeholder.com/48';
-            const country=d?.country||'';
-            const steamId=d?.steam_id_64||'';
-            const twitchId=d?.twitch_id||'';
-            const st=getPlayerStats(data);
-            const cardId='card_'+nickname.replace(/[^a-zA-Z0-9]/g,'_');
-            return`<div class="player-card" id="${cardId}" data-nick="${nickname}">
-                <div class="player-top">
-                    <img class="player-avatar" src="${avatar}" alt="${nickname}" onerror="this.src='https://via.placeholder.com/48'">
-                    <div class="player-info"><div class="player-nick">${nickname}</div><div class="player-country">${country.toUpperCase()} ${getFlag(country)}</div></div>
-                    <div class="player-level ${getLevelClass(st.level)}">${st.level}</div>
-                </div>
-                <div class="premier-badge" style="background:linear-gradient(90deg,rgba(255,215,0,0.15),rgba(255,165,0,0.05));border-radius:8px;padding:6px 10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;${st.premier?'':'display:none'}">
-                    <span style="font-size:0.7rem;color:#ffd700;font-weight:600">PREMIER</span>
-                    <span class="premier-value" style="font-size:1rem;font-weight:800;color:#ffd700">${st.premier?st.premier.toLocaleString():''}</span>
-                </div>
-                <div class="player-stats-row">
-                    <div class="player-stat"><div class="player-stat-val" style="color:var(--orange)">${st.elo}</div><div class="player-stat-label">ELO</div></div>
-                    <div class="player-stat"><div class="player-stat-val">${st.kd}</div><div class="player-stat-label">K/D</div></div>
-                    <div class="player-stat"><div class="player-stat-val">${st.hs}%</div><div class="player-stat-label">HS%</div></div>
-                    <div class="player-stat"><div class="player-stat-val" style="color:${st.clutchRate>=30?'var(--green)':st.clutchRate>=20?'var(--blue)':'var(--text2)'}">${st.clutchRate}%</div><div class="player-stat-label">Clutch</div></div>
-                </div>
-                <div class="player-elo-bar"><div class="elo-header"><span class="elo-label">FACEIT ELO</span><span class="elo-value">${st.elo}</span></div><div class="elo-track"><div class="elo-fill" style="width:${getEloWidth(st.elo)}%;background:${getEloColor(st.elo)}"></div></div></div>
-                <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text3);margin-bottom:8px"><span>Раундов/матч: ${st.avgRounds}</span><span>Clutch: ${st.v1w+st.v2w}/${st.v1c+st.v2c}</span></div>
-                <div class="player-links">
-                    <a href="https://www.faceit.com/en/players/${encodeURIComponent(nickname)}" target="_blank" class="player-link link-faceit" onclick="event.stopPropagation()">FACEIT</a>
-                    ${steamId?`<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam" onclick="event.stopPropagation()">Steam</a>`:''}
-                    ${twitchId?`<a href="https://twitch.tv/${encodeURIComponent(twitchId)}" target="_blank" class="player-link link-twitch" onclick="event.stopPropagation()">Twitch</a>`:''}
-                </div>
-            </div>`;
-        }
+// Compare
+function rComp(){
+const c=document.getElementById('cc'),al=Object.values(PD);
+if(!al.length){c.innerHTML='<div class="ld">Добавьте игроков</div>';return}
+const ss=al.map(d=>({n:d.d?.nickname||'?',...gstats(d)}));
+const be=Math.max(...ss.map(s=>s.elo)),bk=Math.max(...ss.map(s=>parseFloat(s.kd)||0)),bh=Math.max(...ss.map(s=>parseInt(s.hs)||0)),bw=Math.max(...ss.map(s=>s.wr)),bc=Math.max(...ss.map(s=>s.cr));
+c.innerHTML=`<table class="ctable"><thead><tr><th>Игрок</th><th>ELO</th><th>Lvl</th><th>Premier</th><th>K/D</th><th>HS%</th><th>ADR</th><th>Win%</th><th>Clutch%</th><th>Матчей</th><th>Р/м</th></tr></thead><tbody>${ss.map(s=>`<tr><td style="font-weight:700">${s.n}</td><td class="${s.elo===be?'best':''}">${s.elo}</td><td>${s.lvl}</td><td style="color:${s.pm?'#ffd700':'var(--text3)'}">${s.pm?s.pm.toLocaleString():'—'}</td><td class="${parseFloat(s.kd)===bk?'best':''}">${s.kd}</td><td class="${parseInt(s.hs)===bh?'best':''}">${s.hs}%</td><td>${s.adr}</td><td class="${s.wr===bw?'best':''}">${s.wr}%</td><td class="${s.cr===bc?'best':''}">${s.cr}%</td><td>${s.tm}</td><td>${s.ar}</td></tr>`).join('')}</tbody></table>`;
+}
 
-        // Load all players
-        async function loadAllPlayers(){
-            const grid=document.getElementById('playersGrid');
-            grid.innerHTML='<div class="loading"><div class="spinner"></div><br>Загрузка игроков...</div>';
-            playersData={};
-            
-            try {
-                // Load all players in parallel
-                const promises = trackedPlayers.map(nick => getPlayerData(nick).catch(e => { console.error('Load error:', nick, e); return null; }));
-                const results = (await Promise.all(promises)).filter(r => r !== null);
-                
-                if(results.length===0){grid.innerHTML='<div class="loading" style="color:var(--text3)">Добавьте игроков через поиск</div>';return}
-                
-                // Store data
-                results.forEach(r => {
-                    const nick = r.details?.nickname || r.searchResult?.nickname;
-                    if (nick) { playersData[nick] = r; }
-                    const tracked = trackedPlayers.find(t => t.toLowerCase() === nick?.toLowerCase());
-                    if (tracked) playersData[tracked] = r;
-                });
-                
-                grid.innerHTML=results.map(r=>renderPlayerCard(r)).join('');
-                
-                // Click listeners
-                document.querySelectorAll('.player-card').forEach(card=>{
-                    card.addEventListener('click',()=>{
-                        const nick=card.dataset.nick;
-                        let data=playersData[nick];
-                        if(!data){const key=Object.keys(playersData).find(k=>k.toLowerCase()===nick.toLowerCase());if(key)data=playersData[key]}
-                        if(data)openPlayerModal(nick,data);
-                    })
-                });
-                updateStats(results);
-            } catch(e) {
-                console.error('loadAllPlayers error:', e);
-                grid.innerHTML='<div class="loading" style="color:var(--red)">Ошибка загрузки. Попробуйте обновить страницу.</div>';
-            }
-        }
+// Leaderboard
+function swl(t,el){document.querySelectorAll('#tl .tab').forEach(b=>b.classList.remove('on'));el.classList.add('on');rLB(t)}
+function rLB(t){
+const c=document.getElementById('lc'),al=Object.values(PD);
+if(!al.length){c.innerHTML='<div class="ld">Добавьте игроков</div>';return}
+let ss=al.map(d=>({n:d.d?.nickname||'?',av:d.d?.avatar||'',...gstats(d)}));
+if(t==='elo')ss.sort((a,b)=>b.elo-a.elo);else if(t==='premier')ss.sort((a,b)=>(b.pm||0)-(a.pm||0));else if(t==='kd')ss.sort((a,b)=>parseFloat(b.kd)-parseFloat(a.kd));else ss.sort((a,b)=>b.wr-a.wr);
+c.innerHTML=ss.map((s,i)=>{const rc=i===0?'g':i===1?'s':i===2?'b':'n';
+let v='';if(t==='elo')v=`<span style="color:var(--orange)">${s.elo}</span>`;else if(t==='premier')v=s.pm?`<span style="color:#ffd700">${s.pm.toLocaleString()}</span>`:'<span style="color:var(--text3)">—</span>';else if(t==='kd')v=`<span style="color:var(--green)">${s.kd}</span>`;else v=`<span style="color:var(--blue)">${s.wr}%</span>`;
+return`<div class="li" onclick="oMB('${s.n}')"><div class="lr ${rc}">${i+1}</div><img src="${s.av}" style="width:34px;height:34px;border-radius:8px;object-fit:cover;border:2px solid var(--border)" onerror="this.src='https://via.placeholder.com/34'"><div class="li2"><div class="ln">${s.n}</div><div class="ls2">Lvl ${s.lvl} • ${s.tm} матчей • K/D ${s.kd}</div></div><div class="lv">${v}</div></div>`}).join('');
+}
 
-        function updateStats(results){
-            document.getElementById('statPlayers').textContent=results.length;
-            let totalElo=0,totalMatches=0,totalKD=0;
-            results.forEach(r=>{const s=getPlayerStats(r);totalElo+=s.elo;totalMatches+=s.totalMatches;totalKD+=parseFloat(s.kd)||0});
-            document.getElementById('statElo').textContent=results.length?Math.round(totalElo/results.length):0;
-            document.getElementById('statMatches').textContent=totalMatches;
-            document.getElementById('statKD').textContent=results.length?(totalKD/results.length).toFixed(2):'0';
-        }
+function oMB(n){let d=PD[n];if(!d){const k=Object.keys(PD).find(x=>x.toLowerCase()===n.toLowerCase());if(k)d=PD[k]}if(d)oModal(n,d)}
 
-        // Compare table
-        function renderCompare(){
-            const container=document.getElementById('compareContent');
-            const allData=Object.values(playersData);
-            if(allData.length===0){container.innerHTML='<div class="loading">Добавьте игроков для сравнения</div>';return}
-            
-            // Find best values for highlighting
-            const stats=allData.map(d=>({nick:d.details?.nickname||'?',...getPlayerStats(d)}));
-            const bestElo=Math.max(...stats.map(s=>s.elo));
-            const bestKD=Math.max(...stats.map(s=>parseFloat(s.kd)||0));
-            const bestHS=Math.max(...stats.map(s=>parseInt(s.hs)||0));
-            const bestWR=Math.max(...stats.map(s=>s.winRate));
-            const bestClutch=Math.max(...stats.map(s=>s.clutchRate));
-            const bestPremier=Math.max(...stats.map(s=>s.premier||0));
-            
-            container.innerHTML=`<table class="compare-table">
-                <thead><tr>
-                    <th>Игрок</th><th>ELO</th><th>Level</th><th>Premier</th><th>K/D</th><th>HS%</th><th>ADR</th><th>Win%</th><th>Clutch%</th><th>Матчей</th><th>Раундов/м</th>
-                </tr></thead>
-                <tbody>${stats.map(s=>`<tr>
-                    <td style="font-weight:700">${s.nick}</td>
-                    <td class="${s.elo===bestElo?'best':''}">${s.elo}</td>
-                    <td>${s.level}</td>
-                    <td style="color:${s.premier?'#ffd700':'var(--text3)'}">${s.premier?s.premier.toLocaleString():'—'}</td>
-                    <td class="${parseFloat(s.kd)===bestKD?'best':''}">${s.kd}</td>
-                    <td class="${parseInt(s.hs)===bestHS?'best':''}">${s.hs}%</td>
-                    <td>${s.adr}</td>
-                    <td class="${s.winRate===bestWR?'best':''}">${s.winRate}%</td>
-                    <td class="${s.clutchRate===bestClutch?'best':''}">${s.clutchRate}%</td>
-                    <td>${s.totalMatches}</td>
-                    <td>${s.avgRounds}</td>
-                </tr>`).join('')}</tbody>
-            </table>`;
-        }
+// Modal
+const mo=document.getElementById('mo');
+document.getElementById('mx').onclick=()=>mo.classList.remove('on');
+mo.onclick=e=>{if(e.target===mo)mo.classList.remove('on')};
 
-        // Leaderboard
-        let currentLB='elo';
-        function switchLB(type){
-            currentLB=type;
-            document.querySelectorAll('#tab-leaderboard .tab-btn').forEach(b=>b.classList.remove('active'));
-            document.getElementById('lb-'+type+'-btn').classList.add('active');
-            renderLeaderboard(type);
-        }
+function oModal(nick,data){
+if(!data)return;
+const d=data.d,s=data.st,m=data.m||[],st=gstats(data);
+const av=d?.avatar||'https://via.placeholder.com/64',sid=d?.steam_id_64||'',tid=d?.twitch_id||'',sn=d?.steam_nickname||'',co=d?.country||'',pm=(d?.memberships||[]).includes('premium');
+document.getElementById('mav').src=av;
+document.getElementById('mn').textContent=nick;
+document.getElementById('ms').innerHTML=`Lvl ${st.lvl} • ${st.elo} ELO • ${co.toUpperCase()} ${gf(co)}${pm?' • <span style="color:#ff5500">★ Premium</span>':''}${sn?' • Steam: '+sn:''}${st.pm?' • <span style="color:#ffd700">Premier: '+st.pm.toLocaleString()+'</span>':''}${st.pb?' • <span style="color:#daa520">Best: '+st.pb.toLocaleString()+'</span>':''}`;
+document.getElementById('mg').innerHTML=`<div class="mc2"><div class="ml">Premier</div><div class="mv2" style="color:#ffd700">${st.pm?st.pm.toLocaleString():'—'}</div></div><div class="mc2"><div class="ml">Premier Best</div><div class="mv2" style="color:#daa520">${st.pb?st.pb.toLocaleString():'—'}</div></div><div class="mc2"><div class="ml">ELO</div><div class="mv2 o">${st.elo}</div></div><div class="mc2"><div class="ml">Level</div><div class="mv2" style="color:var(--orange)">${st.lvl}</div></div><div class="mc2"><div class="ml">K/D</div><div class="mv2 g">${st.kd}</div></div><div class="mc2"><div class="ml">K/R</div><div class="mv2">${st.kpr}</div></div><div class="mc2"><div class="ml">HS%</div><div class="mv2 b">${st.hs}%</div></div><div class="mc2"><div class="ml">ADR</div><div class="mv2">${st.adr}</div></div><div class="mc2"><div class="ml">Win Rate</div><div class="mv2 g">${st.wr}%</div></div><div class="mc2"><div class="ml">Матчей</div><div class="mv2">${st.tm}</div></div><div class="mc2"><div class="ml">Побед</div><div class="mv2 p">${st.w}</div></div><div class="mc2"><div class="ml">Avg Kills</div><div class="mv2">${st.ak}</div></div><div class="mc2"><div class="ml">Avg Deaths</div><div class="mv2">${st.ad}</div></div><div class="mc2"><div class="ml">Avg Assists</div><div class="mv2">${st.aa}</div></div><div class="mc2"><div class="ml">Win Streak</div><div class="mv2 g">${st.ls}</div></div><div class="mc2"><div class="ml">Entry Rate</div><div class="mv2">${st.er}</div></div><div class="mc2"><div class="ml">Entry Win%</div><div class="mv2">${st.es}</div></div><div class="mc2"><div class="ml">Clutch Rate</div><div class="mv2" style="color:${st.cr>=30?'#44ff88':st.cr>=20?'#4488ff':'#8888aa'}">${st.cr}%</div></div><div class="mc2"><div class="ml">1v1 Win%</div><div class="mv2">${s?.lifetime?.['1v1 Win Rate']||'—'}</div></div><div class="mc2"><div class="ml">1v2 Win%</div><div class="mv2">${s?.lifetime?.['1v2 Win Rate']||'—'}</div></div><div class="mc2"><div class="ml">Flash Win%</div><div class="mv2">${s?.lifetime?.['Flash Success Rate']||'—'}</div></div><div class="mc2"><div class="ml">Ср. раундов</div><div class="mv2">${st.ar}</div></div><div class="mc2"><div class="ml">Всего раундов</div><div class="mv2">${st.tr}</div></div><div class="mc2"><div class="ml">Clutch 1v1</div><div class="mv2">${st.v1w}/${st.v1c}</div></div><div class="mc2"><div class="ml">Clutch 1v2</div><div class="mv2">${st.v2w}/${st.v2c}</div></div>`;
+dElo(m,d?.player_id);
+const mh=m.slice(0,20).map(mt=>{const t=mt?.teams||{},f1=t?.faction1,w=mt?.results?.winner,s1=mt?.results?.score?.faction1||mt?.results?.score?.[Object.keys(mt?.results?.score||{})[0]]||'?',s2=mt?.results?.score?.faction2||mt?.results?.score?.[Object.keys(mt?.results?.score||{})[1]]||'?';const iF1=f1?.players?.some(p=>p?.player_id===d?.player_id)||f1?.team_id===d?.player_id;const won=(iF1&&w==='faction1')||(!iF1&&w==='faction2');return`<div class="mi"><div class="mr ${won?'mw':'mlo'}">${won?'WIN':'LOSS'}</div><div style="flex:1"><div class="ms3">${s1} : ${s2}</div><div class="mm">${mt?.competition_name||'CS2 5v5'}</div></div><div class="mt">${mt?.finished_at?ta(mt.finished_at):''}</div></div>`}).join('');
+document.getElementById('mm').innerHTML=mh||'<div style="color:var(--text3)">Нет данных</div>';
+document.getElementById('ml').innerHTML=`<a href="https://www.faceit.com/en/players/${encodeURIComponent(nick)}" target="_blank" class="la lf">🔗 FACEIT</a>${sid?`<a href="https://steamcommunity.com/profiles/${sid}" target="_blank" class="la ls">🎮 Steam</a>`:''}${tid?`<a href="https://twitch.tv/${encodeURIComponent(tid)}" target="_blank" class="la lt">📺 Twitch</a>`:''}${sid?`<a href="https://csstats.gg/player/${sid}" target="_blank" class="la" style="background:rgba(68,255,136,.15);color:#44ff88">📊 CS Stats</a>`:''}`;
+mo.classList.add('on');
+}
 
-        function renderLeaderboard(type){
-            const container=document.getElementById('leaderboardContent');
-            const allData=Object.values(playersData);
-            if(allData.length===0){container.innerHTML='<div class="loading">Добавьте игроков</div>';return}
-            
-            let stats=allData.map(d=>({nick:d.details?.nickname||'?',avatar:d.details?.avatar||'',...getPlayerStats(d)}));
-            
-            switch(type){
-                case'elo':stats.sort((a,b)=>b.elo-a.elo);break;
-                case'premier':stats.sort((a,b)=>(b.premier||0)-(a.premier||0));break;
-                case'kd':stats.sort((a,b)=>parseFloat(b.kd)-parseFloat(a.kd));break;
-                case'wr':stats.sort((a,b)=>b.winRate-a.winRate);break;
-            }
-            
-            container.innerHTML=stats.map((s,i)=>{
-                const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'normal';
-                let value='';
-                switch(type){
-                    case'elo':value=`<span style="color:var(--orange)">${s.elo}</span>`;break;
-                    case'premier':value=s.premier?`<span style="color:#ffd700">${s.premier.toLocaleString()}</span>`:'<span style="color:var(--text3)">—</span>';break;
-                    case'kd':value=`<span style="color:var(--green)">${s.kd}</span>`;break;
-                    case'wr':value=`<span style="color:var(--blue)">${s.winRate}%</span>`;break;
-                }
-                return`<div class="lb-item" onclick="openPlayerModalByNick('${s.nick}')">
-                    <div class="lb-rank ${rankClass}">${i+1}</div>
-                    <img src="${s.avatar}" style="width:40px;height:40px;border-radius:10px;object-fit:cover;border:2px solid var(--border)" onerror="this.src='https://via.placeholder.com/40'">
-                    <div class="lb-info"><div class="lb-name">${s.nick}</div><div class="lb-sub">Level ${s.level} • ${s.totalMatches} матчей • K/D ${s.kd}</div></div>
-                    <div class="lb-value">${value}</div>
-                </div>`;
-            }).join('');
-        }
+function dElo(m,pid){
+const cv=document.getElementById('ec'),cx=cv.getContext('2d');
+cv.width=cv.offsetWidth*2;cv.height=cv.offsetHeight*2;cx.scale(2,2);
+const w=cv.offsetWidth,h=cv.offsetHeight;cx.clearRect(0,0,w,h);
+const rs=[];[...m].reverse().slice(0,50).forEach(mt=>{const t=mt?.teams||{},f1=t?.faction1,w=mt?.results?.winner;const iF1=f1?.players?.some(p=>p?.player_id===pid)||f1?.team_id===pid;rs.push({w:(iF1&&w==='faction1')||(!iF1&&w==='faction2')})});
+if(!rs.length){cx.fillStyle='#55556a';cx.font='12px Inter';cx.textAlign='center';cx.fillText('Нет данных',w/2,h/2);return}
+const ed=[];let cu=1000;rs.forEach(r=>{cu+=r.w?25:-25;ed.push({e:Math.max(0,cu),w:r.w})});
+const mn=Math.min(...ed.map(d=>d.e))-30,mx=Math.max(...ed.map(d=>d.e))+30;
+const bw=Math.max(3,(w-36)/ed.length-1.5),ch=h-36;
+cx.strokeStyle='rgba(255,255,255,.04)';cx.lineWidth=1;
+for(let i=0;i<5;i++){const y=18+(ch/5)*i;cx.beginPath();cx.moveTo(28,y);cx.lineTo(w-8,y);cx.stroke();cx.fillStyle='#55556a';cx.font='9px Inter';cx.textAlign='right';cx.fillText(Math.round(mx-((mx-mn)/5)*i),24,y+3)}
+ed.forEach((d,i)=>{const x=28+i*((w-36)/ed.length)+1;const bh=((d.e-mn)/(mx-mn))*ch;const y=18+ch-bh;
+const g=cx.createLinearGradient(x,y,x,18+ch);g.addColorStop(0,d.w?'#44ff88':'#ff4466');g.addColorStop(1,d.w?'#22aa55':'#aa2244');
+cx.fillStyle=g;cx.beginPath();cx.roundRect(x,y,bw,bh,[2,2,0,0]);cx.fill()});
+const la=ed[ed.length-1]?.e||0;const ly=18+ch-((la-mn)/(mx-mn))*ch;
+cx.strokeStyle='#ff5500';cx.lineWidth=1;cx.setLineDash([4,2]);cx.beginPath();cx.moveTo(28,ly);cx.lineTo(w-8,ly);cx.stroke();
+cx.setLineDash([]);cx.fillStyle='#ff5500';cx.font='bold 10px Inter';cx.textAlign='left';cx.fillText('ELO: '+la,w-44,ly-4);
+}
 
-        function openPlayerModalByNick(nick){
-            let data=playersData[nick];
-            if(!data){const key=Object.keys(playersData).find(k=>k.toLowerCase()===nick.toLowerCase());if(key)data=playersData[key]}
-            if(data)openPlayerModal(nick,data);
-        }
+// Search
+const si=document.getElementById('si'),sr=document.getElementById('sr');
+let st2=null;
+si.oninput=()=>{clearTimeout(st2);const q=si.value.trim();if(q.length<2){sr.classList.remove('on');return}
+st2=setTimeout(async()=>{const r=await search(q);if(!r.length){sr.classList.remove('on');return}
+sr.innerHTML=r.map(p=>`<div class="sri" data-n="${p.nickname||p.name}"><img src="${p.avatar||'https://via.placeholder.com/28'}" onerror="this.src='https://via.placeholder.com/28'"><div style="flex:1"><div style="font-weight:600;font-size:.82rem">${p.nickname||p.name}</div><div style="font-size:.7rem;color:var(--text3)">${p.country||''} • ${p.games?.cs2?.skill_level||'?'} lvl</div></div><div style="font-size:.72rem;color:var(--orange);font-weight:700">${p.games?.cs2?.faceit_elo||'—'}</div></div>`).join('');
+sr.classList.add('on');
+sr.querySelectorAll('.sri').forEach(el=>{el.onclick=()=>{const n=el.dataset.n;if(n&&!TP.includes(n)){TP.push(n);addP(n);loadAll();toast('✓',n+' добавлен')}sr.classList.remove('on');si.value=''}});
+},350)};
+document.onclick=e=>{if(!e.target.closest('.sbox'))sr.classList.remove('on')};
 
-        // Modal
-        const modalOverlay=document.getElementById('modalOverlay');
-        document.getElementById('modalClose').addEventListener('click',()=>modalOverlay.classList.remove('active'));
-        modalOverlay.addEventListener('click',(e)=>{if(e.target===modalOverlay)modalOverlay.classList.remove('active')});
+// Add player
+async function addP(nick){
+try{await fetch(AB+'/api/players',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nickname:nick})})}catch(e){console.error(e)}
+}
+document.getElementById('ba').onclick=()=>{
+const n=prompt('Введите никнейм, Steam ссылку или Steam ID:');
+if(n&&n.trim()){const x=n.trim();if(!TP.includes(x)){TP.push(x);addP(x);loadAll();toast('✓',x+' добавлен для всех')}else toast('ℹ',x+' уже в списке')}};
+document.getElementById('bs').onclick=()=>{navigator.clipboard.writeText(location.href).then(()=>toast('✓','Ссылка скопирована')).catch(()=>{})};
 
-        function openPlayerModal(nickname,data){
-            if(!data)data=playersData[nickname];
-            if(!data){console.error('No data for modal:',nickname);return}
-            const d=data.details,s=data.stats,matches=data.matches||[];
-            const st=getPlayerStats(data);
-            const avatar=d?.avatar||'https://via.placeholder.com/80';
-            const steamId=d?.steam_id_64||'';
-            const twitchId=d?.twitch_id||'';
-            const steamName=d?.steam_nickname||'';
-            const country=d?.country||'';
-            const isPremium=(d?.memberships||[]).includes('premium');
-
-            document.getElementById('modalAvatar').src=avatar;
-            document.getElementById('modalName').textContent=nickname;
-            document.getElementById('modalSub').innerHTML=`Level ${st.level} • ${st.elo} ELO • ${country.toUpperCase()} ${getFlag(country)}${isPremium?' • <span style="color:#ff5500">★ Premium</span>':''}${steamName?' • Steam: '+steamName:''}${st.premier?' • <span style="color:#ffd700">Premier: '+st.premier.toLocaleString()+'</span>':''}${st.premierBest?' • <span style="color:#daa520">Best: '+st.premierBest.toLocaleString()+'</span>':''}`;
-
-            document.getElementById('modalStats').innerHTML=`
-                <div class="stat-card"><div class="stat-label">Premier</div><div class="stat-value" style="color:#ffd700">${st.premier?st.premier.toLocaleString():'—'}</div></div>
-                <div class="stat-card"><div class="stat-label">Premier Best</div><div class="stat-value" style="color:#daa520">${st.premierBest?st.premierBest.toLocaleString():'—'}</div></div>
-                <div class="stat-card"><div class="stat-label">FACEIT ELO</div><div class="stat-value orange">${st.elo}</div></div>
-                <div class="stat-card"><div class="stat-label">Level</div><div class="stat-value" style="color:var(--orange)">${st.level}</div></div>
-                <div class="stat-card"><div class="stat-label">K/D</div><div class="stat-value green">${st.kd}</div></div>
-                <div class="stat-card"><div class="stat-label">K/R</div><div class="stat-value">${st.kpr}</div></div>
-                <div class="stat-card"><div class="stat-label">HS%</div><div class="stat-value blue">${st.hs}%</div></div>
-                <div class="stat-card"><div class="stat-label">ADR</div><div class="stat-value">${st.adr}</div></div>
-                <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value green">${st.winRate}%</div></div>
-                <div class="stat-card"><div class="stat-label">Матчей</div><div class="stat-value">${st.totalMatches}</div></div>
-                <div class="stat-card"><div class="stat-label">Побед</div><div class="stat-value purple">${st.wins}</div></div>
-                <div class="stat-card"><div class="stat-label">Avg Kills</div><div class="stat-value">${st.avgKills}</div></div>
-                <div class="stat-card"><div class="stat-label">Avg Deaths</div><div class="stat-value">${st.avgDeaths}</div></div>
-                <div class="stat-card"><div class="stat-label">Avg Assists</div><div class="stat-value">${st.avgAssists}</div></div>
-                <div class="stat-card"><div class="stat-label">Win Streak</div><div class="stat-value green">${st.longestStreak}</div></div>
-                <div class="stat-card"><div class="stat-label">Entry Rate</div><div class="stat-value">${st.entryRate}</div></div>
-                <div class="stat-card"><div class="stat-label">Entry Win%</div><div class="stat-value">${st.entrySuccess}</div></div>
-                <div class="stat-card"><div class="stat-label">Clutch Rate</div><div class="stat-value" style="color:${st.clutchRate>=30?'#44ff88':st.clutchRate>=20?'#4488ff':'#8888aa'}">${st.clutchRate}%</div></div>
-                <div class="stat-card"><div class="stat-label">1v1 Win%</div><div class="stat-value">${s?.lifetime?.['1v1 Win Rate']||'—'}</div></div>
-                <div class="stat-card"><div class="stat-label">1v2 Win%</div><div class="stat-value">${s?.lifetime?.['1v2 Win Rate']||'—'}</div></div>
-                <div class="stat-card"><div class="stat-label">Flash Win%</div><div class="stat-value">${s?.lifetime?.['Flash Success Rate']||'—'}</div></div>
-                <div class="stat-card"><div class="stat-label">Ср. раундов</div><div class="stat-value">${st.avgRounds}</div></div>
-                <div class="stat-card"><div class="stat-label">Всего раундов</div><div class="stat-value">${st.totalRounds}</div></div>
-                <div class="stat-card"><div class="stat-label">Clutch 1v1</div><div class="stat-value">${st.v1w}/${st.v1c}</div></div>
-                <div class="stat-card"><div class="stat-label">Clutch 1v2</div><div class="stat-value">${st.v2w}/${st.v2c}</div></div>
-            `;
-
-            drawEloChart(matches,d?.player_id);
-
-            const matchesHtml=matches.slice(0,20).map(m=>{
-                const teams=m?.teams||{};const f1=teams?.faction1;const f2=teams?.faction2;
-                const s1=m?.results?.score?.faction1||m?.results?.score?.[Object.keys(m?.results?.score||{})[0]]||'?';
-                const s2=m?.results?.score?.faction2||m?.results?.score?.[Object.keys(m?.results?.score||{})[1]]||'?';
-                const winner=m?.results?.winner;
-                const isF1=f1?.players?.some(p=>p?.player_id===d?.player_id)||f1?.team_id===d?.player_id;
-                const won=(isF1&&winner==='faction1')||(!isF1&&winner==='faction2');
-                return`<div class="match-item"><div class="match-result ${won?'match-win':'match-loss'}">${won?'WIN':'LOSS'}</div><div style="flex:1"><div class="match-score">${s1} : ${s2}</div><div class="match-map">${m?.competition_name||'CS2 5v5'}</div></div><div class="match-time">${m?.finished_at?timeAgo(m.finished_at):''}</div></div>`;
-            }).join('');
-            document.getElementById('modalMatches').innerHTML=matchesHtml||'<div style="color:var(--text3)">Нет данных</div>';
-
-            document.getElementById('modalLinks').innerHTML=`
-                <a href="https://www.faceit.com/en/players/${encodeURIComponent(nickname)}" target="_blank" class="player-link link-faceit">🔗 FACEIT</a>
-                ${steamId?`<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam">🎮 Steam</a>`:''}
-                ${twitchId?`<a href="https://twitch.tv/${encodeURIComponent(twitchId)}" target="_blank" class="player-link link-twitch">📺 Twitch</a>`:''}
-                ${steamId?`<a href="https://csstats.gg/player/${steamId}" target="_blank" class="player-link" style="background:rgba(68,255,136,0.15);color:#44ff88">📊 CS Stats</a>`:''}
-            `;
-            modalOverlay.classList.add('active');
-        }
-
-        // ELO chart
-        function drawEloChart(matches,playerId){
-            const canvas=document.getElementById('eloChart');const ctx=canvas.getContext('2d');
-            canvas.width=canvas.offsetWidth*2;canvas.height=canvas.offsetHeight*2;ctx.scale(2,2);
-            const w=canvas.offsetWidth,h=canvas.offsetHeight;ctx.clearRect(0,0,w,h);
-            const results=[];[...matches].reverse().slice(0,50).forEach(m=>{
-                const teams=m?.teams||{};const f1=teams?.faction1;const winner=m?.results?.winner;
-                const isF1=f1?.players?.some(p=>p?.player_id===playerId)||f1?.team_id===playerId;
-                results.push({won:(isF1&&winner==='faction1')||(!isF1&&winner==='faction2')});
-            });
-            if(results.length<1){ctx.fillStyle='#55556a';ctx.font='14px Inter';ctx.textAlign='center';ctx.fillText('Нет данных',w/2,h/2);return}
-            const eloData=[];let cur=1000;
-            results.forEach(r=>{cur+=r.won?25:-25;eloData.push({elo:Math.max(0,cur),won:r.won})});
-            const min=Math.min(...eloData.map(d=>d.elo))-30,max=Math.max(...eloData.map(d=>d.elo))+30;
-            const barW=Math.max(4,(w-40)/eloData.length-2),chartH=h-40;
-            ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
-            for(let i=0;i<5;i++){const y=20+(chartH/5)*i;ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(w-10,y);ctx.stroke();
-                ctx.fillStyle='#55556a';ctx.font='10px Inter';ctx.textAlign='right';ctx.fillText(Math.round(max-((max-min)/5)*i),26,y+4)}
-            eloData.forEach((d,i)=>{const x=30+i*((w-40)/eloData.length)+1;const barH=((d.elo-min)/(max-min))*chartH;const y=20+chartH-barH;
-                const g=ctx.createLinearGradient(x,y,x,20+chartH);g.addColorStop(0,d.won?'#44ff88':'#ff4466');g.addColorStop(1,d.won?'#22aa55':'#aa2244');
-                ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(x,y,barW,barH,[3,3,0,0]);ctx.fill()});
-            const last=eloData[eloData.length-1]?.elo||0;const lastY=20+chartH-((last-min)/(max-min))*chartH;
-            ctx.strokeStyle='#ff5500';ctx.lineWidth=1;ctx.setLineDash([5,3]);ctx.beginPath();ctx.moveTo(30,lastY);ctx.lineTo(w-10,lastY);ctx.stroke();
-            ctx.setLineDash([]);ctx.fillStyle='#ff5500';ctx.font='bold 11px Inter';ctx.textAlign='left';ctx.fillText(`ELO: ${last}`,w-50,lastY-5);
-        }
-
-        // Search
-        const searchInput=document.getElementById('searchInput'),searchResults=document.getElementById('searchResults');
-        searchInput.addEventListener('input',()=>{clearTimeout(searchTimeout);const q=searchInput.value.trim();if(q.length<2){searchResults.classList.remove('active');return}
-            searchTimeout=setTimeout(async()=>{const results=await searchPlayers(q);if(results.length===0){searchResults.classList.remove('active');return}
-                searchResults.innerHTML=results.map(p=>`<div class="search-result-item" data-nick="${p.nickname||p.name}"><img src="${p.avatar||'https://via.placeholder.com/32'}" alt="" onerror="this.src='https://via.placeholder.com/32'"><div style="flex:1"><div class="search-result-name">${p.nickname||p.name}</div><div style="font-size:0.75rem;color:var(--text3)">${p.country||''} • ${p.games?.cs2?.skill_level||'?'} lvl</div></div><div class="search-result-elo">${p.games?.cs2?.faceit_elo||'—'} ELO</div></div>`).join('');
-                searchResults.classList.add('active');
-                searchResults.querySelectorAll('.search-result-item').forEach(el=>{el.addEventListener('click',()=>{const nick=el.dataset.nick;if(nick&&!trackedPlayers.includes(nick)){addPlayerShared(nick);loadAllPlayers();showToast('✓',`${nick} добавлен для всех`)}searchResults.classList.remove('active');searchInput.value=''})});
-            },400)});
-        document.addEventListener('click',(e)=>{if(!e.target.closest('.search-wrap'))searchResults.classList.remove('active')});
-
-        // Add player
-        document.getElementById('btnAddPlayer').addEventListener('click',()=>{
-            const nick=prompt('Введите никнейм, Steam ссылку или Steam ID:');
-            if(nick&&nick.trim()){const n=nick.trim();if(!trackedPlayers.includes(n)){addPlayerShared(n);loadAllPlayers();showToast('✓',`${n} добавлен для всех`)}else{showToast('ℹ',`${n} уже отслеживается`)}}});
-
-        // Share
-        document.getElementById('btnShare').addEventListener('click',()=>{navigator.clipboard.writeText(window.location.href).then(()=>showToast('✓','Ссылка скопирована!')).catch(()=>prompt('Скопируйте:',window.location.href))});
-
-        // Toast
-        function showToast(icon,text){document.getElementById('toastIcon').textContent=icon;document.getElementById('toastText').textContent=text;const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
-
-        // Init
-        initPlayerList();
-        setInterval(loadAllPlayers,120000);
-    </script>
+function toast(i,t){const e=document.getElementById('tst');e.textContent=i+' '+t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),3000)}
+</script>
 </body>
 </html>

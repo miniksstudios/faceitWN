@@ -508,8 +508,6 @@
             const country=d?.country||'';
             const steamId=d?.steam_id_64||'';
             const twitchId=d?.twitch_id||'';
-            // If no twitch_id from FACEIT, try the same nickname as Twitch username
-            const twitchName=twitchId||nickname;
             const st=getPlayerStats(data);
             const cardId='card_'+nickname.replace(/[^a-zA-Z0-9]/g,'_');
             return`<div class="player-card" id="${cardId}" data-nick="${nickname}">
@@ -533,7 +531,7 @@
                 <div class="player-links">
                     <a href="https://www.faceit.com/en/players/${encodeURIComponent(nickname)}" target="_blank" class="player-link link-faceit" onclick="event.stopPropagation()">FACEIT</a>
                     ${steamId?`<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam" onclick="event.stopPropagation()">Steam</a>`:''}
-                    <a href="https://twitch.tv/${encodeURIComponent(twitchName)}" target="_blank" class="player-link link-twitch" onclick="event.stopPropagation()">Twitch</a>
+                    ${twitchId?`<a href="https://twitch.tv/${encodeURIComponent(twitchId)}" target="_blank" class="player-link link-twitch" onclick="event.stopPropagation()">Twitch</a>`:''}
                 </div>
             </div>`;
         }
@@ -681,7 +679,6 @@
             const avatar=d?.avatar||'https://via.placeholder.com/80';
             const steamId=d?.steam_id_64||'';
             const twitchId=d?.twitch_id||'';
-            const twitchName=twitchId||nickname;
             const steamName=d?.steam_nickname||'';
             const country=d?.country||'';
             const isPremium=(d?.memberships||[]).includes('premium');
@@ -734,7 +731,7 @@
             document.getElementById('modalLinks').innerHTML=`
                 <a href="https://www.faceit.com/en/players/${encodeURIComponent(nickname)}" target="_blank" class="player-link link-faceit">🔗 FACEIT</a>
                 ${steamId?`<a href="https://steamcommunity.com/profiles/${steamId}" target="_blank" class="player-link link-steam">🎮 Steam</a>`:''}
-                <a href="https://twitch.tv/${encodeURIComponent(twitchName)}" target="_blank" class="player-link link-twitch">📺 Twitch</a>
+                ${twitchId?`<a href="https://twitch.tv/${encodeURIComponent(twitchId)}" target="_blank" class="player-link link-twitch">📺 Twitch</a>`:''}
                 ${steamId?`<a href="https://csstats.gg/player/${steamId}" target="_blank" class="player-link" style="background:rgba(68,255,136,0.15);color:#44ff88">📊 CS Stats</a>`:''}
             `;
             modalOverlay.classList.add('active');
